@@ -1,0 +1,31 @@
+﻿@model IEnumerable<AutoFlow.Models.Car>
+
+@{
+    ViewData["Title"] = "Cars";
+}
+
+<h1>Cars</h1>
+
+<p>
+    <a href="/Cars/Create">Add New Car</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Make</th>
+            <th>Model</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var car in Model)
+        {
+            <tr>
+                <td>@car.Make</td>
+                <td>@car.Model</td>
+                <td>@car.Price</td>
+            </tr>
+        }
+    </tbody>
+</table>
