@@ -1,8 +1,60 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Strona główna";
+    Layout = "_Layout";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div style="padding: 50px; text-align: center;">
+    <h1>Witaj w AutoFlow</h1>
+
+    <div id="guestInfo" style="margin-top: 30px;">
+        <a href="/Account/Login" style="padding: 10px 20px; background-color: #222; color: white; text-decoration: none; border-radius: 5px; margin-right: 10px;">Zaloguj się</a>
+        <a href="/Account/Register" style="padding: 10px 20px; background-color: #eb5757; color: white; text-decoration: none; border-radius: 5px;">Zarejestruj się</a>
+    </div>
+    
+    <div id="userInfo" style="margin-top: 30px; display: none;">
+        <h3>Jesteś zalogowany jako: <span id="currentUser"></span></h3>
+        <p>Rola: <span id="userRole"></span></p>
+        <button onclick="logout()" style="padding: 10px 20px; background-color: #eb5757; color: white; border: none; border-radius: 5px; cursor: pointer;">Wyloguj się</button>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        async function checkAuth() {
+            try {
+                const response = await fetch('/Account/CurrentUser');
+                const data = await response.json();
+                
+                if (data.success && data.isAuthenticated) {
+                    document.getElementById('guestInfo').style.display = 'none';
+                    document.getElementById('userInfo').style.display = 'block';
+                    document.getElementById('currentUser').textContent = data.username;
+                    document.getElementById('userRole').textContent = data.role;
+                } else {
+                    document.getElementById('guestInfo').style.display = 'block';
+                    document.getElementById('userInfo').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Błąd sprawdzania autoryzacji:', error);
+                document.getElementById('guestInfo').style.display = 'block';
+                document.getElementById('userInfo').style.display = 'none';
+            }
+        }
+        
+        async function logout() {
+            try {
+                const response = await fetch('/Account/Logout', {
+                    method: 'POST',
+                });
+                
+                if (response.ok) {
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Błąd wylogowania:', error);
+            }
+        }
+        
+        checkAuth();
+    </script>
+}

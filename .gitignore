@@ -23,3 +23,5 @@ packages/
 # Bazy danych lokalne
 *.mdf
 *.ldf
+
+*.http
