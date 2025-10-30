@@ -1,0 +1,280 @@
+@{
+    ViewData["Title"] = "Zarządzanie Użytkownikami";
+}
+
+<link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+
+<div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <h2>AutoFlow</h2>
+            <p>Panel Administratora</p>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="/Admin/Dashboard" class="menu-item">
+                <i>📊</i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/Admin/Users" class="menu-item active">
+                <i>👥</i>
+                <span>Użytkownicy</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="logout()">
+                Wyloguj się
+            </button>
+        </div>
+    </aside>
+
+    <!-- Główna zawartość -->
+    <main class="admin-content">
+        <div class="content-header">
+            <h1>Zarządzanie Użytkownikami</h1>
+            <p>Lista wszystkich użytkowników w systemie</p>
+        </div>
+
+        <!-- Komunikaty -->
+        <div id="alertSuccess" class="alert alert-success"></div>
+        <div id="alertError" class="alert alert-error"></div>
+
+        <!-- Karta z tabelą -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Użytkownicy</h2>
+            </div>
+
+            <div id="loadingSpinner" class="loading">
+                <div class="spinner"></div>
+                <p>Ładowanie użytkowników...</p>
+            </div>
+
+            <table class="users-table" id="usersTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nazwa użytkownika</th>
+                        <th>Rola</th>
+                        <th>Data utworzenia</th>
+                        <th>Akcje</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Modal edycji użytkownika -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edytuj użytkownika</h3>
+            <button class="close-modal" onclick="closeEditModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nazwa użytkownika:</label>
+                <input type="text" id="editUsername" readonly style="background-color: #f8f9fa; padding: 12px; width: 100%; border: 2px solid #ecf0f1; border-radius: 8px;" />
+            </div>
+            <div class="form-group">
+                <label for="editRole">Rola:</label>
+                <select id="editRole">
+                    <option value="User">User</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeEditModal()">Anuluj</button>
+            <button class="btn btn-save" onclick="saveUserChanges()">Zapisz</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal potwierdzenia usunięcia -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Potwierdź usunięcie</h3>
+            <button class="close-modal" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Czy na pewno chcesz usunąć użytkownika <strong id="deleteUsername"></strong>?</p>
+            <p style="color: #e74c3c; margin-top: 10px;">Ta operacja jest nieodwracalna!</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeDeleteModal()">Anuluj</button>
+            <button class="btn btn-delete" onclick="confirmDelete()">Usuń</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentEditUserId = null;
+        let currentDeleteUserId = null;
+
+        // Wczytaj użytkowników przy załadowaniu strony
+        document.addEventListener('DOMContentLoaded', loadUsers);
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/Admin/GetUsers');
+                const data = await response.json();
+
+                if (data.success) {
+                    displayUsers(data.users);
+                } else {
+                    showError('Nie udało się pobrać listy użytkowników');
+                }
+            } catch (error) {
+                showError('Błąd podczas ładowania użytkowników');
+                console.error(error);
+            }
+        }
+
+        function displayUsers(users) {
+            const tableBody = document.getElementById('usersTableBody');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const usersTable = document.getElementById('usersTable');
+
+            tableBody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                const createdDate = new Date(user.createdAt).toLocaleDateString('pl-PL');
+
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td><strong>${user.username}</strong></td>
+                    <td>
+                        <span class="role-badge ${user.role.toLowerCase()}">${user.role}</span>
+                    </td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-edit" onclick="openEditModal(${user.id}, '${user.username}', '${user.role}')">
+                                ✏️ Edytuj
+                            </button>
+                            <button class="btn btn-delete" onclick="openDeleteModal(${user.id}, '${user.username}')">
+                                🗑️ Usuń
+                            </button>
+                        </div>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+
+            loadingSpinner.style.display = 'none';
+            usersTable.style.display = 'table';
+        }
+
+        function openEditModal(userId, username, role) {
+            currentEditUserId = userId;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editRole').value = role;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+            currentEditUserId = null;
+        }
+
+        async function saveUserChanges() {
+            const newRole = document.getElementById('editRole').value;
+
+            try {
+                const response = await fetch('/Admin/UpdateUserRole', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userId: currentEditUserId,
+                        newRole: newRole
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess(data.message);
+                    closeEditModal();
+                    loadUsers();
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Błąd podczas aktualizacji użytkownika');
+                console.error(error);
+            }
+        }
+
+        function openDeleteModal(userId, username) {
+            currentDeleteUserId = userId;
+            document.getElementById('deleteUsername').textContent = username;
+            document.getElementById('deleteModal').classList.add('show');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.remove('show');
+            currentDeleteUserId = null;
+        }
+
+        async function confirmDelete() {
+            try {
+                const response = await fetch(`/Admin/DeleteUser/${currentDeleteUserId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess(data.message);
+                    closeDeleteModal();
+                    loadUsers();
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Błąd podczas usuwania użytkownika');
+                console.error(error);
+            }
+        }
+
+        function showSuccess(message) {
+            const alert = document.getElementById('alertSuccess');
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('alertError');
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/Account/Logout', {
+                    method: 'POST',
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Błąd wylogowania:', error);
+            }
+        }
+    </script>
+}

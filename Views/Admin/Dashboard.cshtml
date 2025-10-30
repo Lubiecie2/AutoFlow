@@ -1,0 +1,65 @@
+@{
+    ViewData["Title"] = "Panel Admina";
+}
+
+<link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+
+<div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <h2>AutoFlow</h2>
+            <p>Panel Administratora</p>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="/Admin/Dashboard" class="menu-item active">
+                <i>📊</i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/Admin/Users" class="menu-item">
+                <i>👥</i>
+                <span>Użytkownicy</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="logout()">
+                Wyloguj się
+            </button>
+        </div>
+    </aside>
+
+    <!-- Główna zawartość -->
+    <main class="admin-content">
+        <div class="content-header">
+            <h1>Dashboard</h1>
+            <p>Witaj w panelu administratora AutoFlow</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Przegląd systemu</h2>
+            </div>
+            <p>Tutaj będą statystyki i informacje o systemie.</p>
+        </div>
+    </main>
+</div>
+
+@section Scripts {
+    <script>
+        async function logout() {
+            try {
+                const response = await fetch('/Account/Logout', {
+                    method: 'POST',
+                });
+                
+                if (response.ok) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Błąd wylogowania:', error);
+            }
+        }
+    </script>
+}
