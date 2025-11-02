@@ -24,4 +24,9 @@ packages/
 *.mdf
 *.ldf
 
+<<<<<<< Updated upstream
 *.http
+=======
+appsettings.json
+autoflow.csproj
+>>>>>>> Stashed changes

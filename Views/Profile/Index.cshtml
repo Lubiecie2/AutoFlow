@@ -1,0 +1,73 @@
+﻿@model AutoFlow.Models.User
+@{
+    ViewData["Title"] = "Mój Profil";
+}
+
+<link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="header-content">
+            <div class="user-avatar">
+                <span class="avatar-icon">👤</span>
+            </div>
+            <div class="user-info">
+                <h1>@Model.Username</h1>
+                <p class="user-role">
+                    <span class="role-badge @Model.Role.ToLower()">@Model.Role</span>
+                </p>
+                <p class="member-since">Członek od: <strong>@Model.CreatedAt.ToString("dd.MM.yyyy")</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="profile-content">
+        <div class="content-grid">
+            <div class="card info-card">
+                <div class="card-header">
+                    <h2>ℹ️ Informacje o koncie</h2>
+                </div>
+                <div class="info-list">
+                    <div class="info-item">
+                        <span class="info-label">Nazwa użytkownika:</span>
+                        <span class="info-value">@Model.Username</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Rola:</span>
+                        <span class="info-value">@Model.Role</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data rejestracji:</span>
+                        <span class="info-value">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status konta:</span>
+                        <span class="info-value status-active">✅ Aktywne</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card activity-card">
+                <div class="card-header">
+                    <h2>📋 Ostatnia aktywność</h2>
+                </div>
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <span class="activity-icon">🔵</span>
+                        <div class="activity-info">
+                            <p class="activity-text">Zalogowano się do systemu</p>
+                            <p class="activity-time">Dzisiaj</p>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-icon">✅</span>
+                        <div class="activity-info">
+                            <p class="activity-text">Utworzono konto</p>
+                            <p class="activity-time">@Model.CreatedAt.ToString("dd.MM.yyyy")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
