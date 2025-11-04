@@ -25,3 +25,5 @@ packages/
 *.ldf
 
 *.http
+
+appsettings.json
