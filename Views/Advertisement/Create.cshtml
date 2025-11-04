@@ -1,0 +1,118 @@
+@{
+    ViewData["Title"] = "Dodaj ogłoszenie";
+}
+
+<link rel="stylesheet" href="~/css/advertisement.css" asp-append-version="true" />
+
+<div class="advertisement-container">
+    <div class="form-card">
+        <div class="form-header">
+            <h1>📝 Dodaj nowe ogłoszenie</h1>
+            <p>Wypełnij formularz, aby dodać ogłoszenie o sprzedaży samochodu</p>
+        </div>
+
+        <form id="advertisementForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="brand">Marka *</label>
+                    <input type="text" id="brand" name="brand" required placeholder="np. BMW, Audi, Mercedes" />
+                </div>
+
+                <div class="form-group">
+                    <label for="model">Model *</label>
+                    <input type="text" id="model" name="model" required placeholder="np. 320i, A4, C-Class" />
+                </div>
+
+                <div class="form-group">
+                    <label for="year">Rocznik *</label>
+                    <input type="number" id="year" name="year" required min="1900" max="2100" placeholder="np. 2020" />
+                </div>
+
+                <div class="form-group">
+                    <label for="color">Kolor *</label>
+                    <input type="text" id="color" name="color" required placeholder="np. Czarny, Biały, Czerwony" />
+                </div>
+
+                <div class="form-group">
+                    <label for="mileage">Przebieg (km) *</label>
+                    <input type="number" id="mileage" name="mileage" required min="0" placeholder="np. 50000" />
+                </div>
+
+                <div class="form-group">
+                    <label for="engine">Silnik *</label>
+                    <input type="text" id="engine" name="engine" required placeholder="np. 2.0 TDI, 1.6 Benzyna" />
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="price">Cena (PLN) *</label>
+                    <input type="number" id="price" name="price" required min="0.01" step="0.01" placeholder="np. 45000" />
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="description">Opis (opcjonalny)</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Dodatkowe informacje o samochodzie..."></textarea>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="window.location.href='/'">Anuluj</button>
+                <button type="submit" class="btn-submit">Dodaj ogłoszenie</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('advertisementForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                brand: document.getElementById('brand').value,
+                model: document.getElementById('model').value,
+                year: parseInt(document.getElementById('year').value),
+                color: document.getElementById('color').value,
+                mileage: parseInt(document.getElementById('mileage').value),
+                engine: document.getElementById('engine').value,
+                price: parseFloat(document.getElementById('price').value),
+                description: document.getElementById('description').value || null
+            };
+            
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            try {
+                const response = await fetch('/Advertisement/Create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    successMessage.textContent = data.message;
+                    successMessage.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Wystąpił błąd podczas dodawania ogłoszenia';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+}

@@ -140,5 +140,93 @@ namespace AutoFlow.Controllers
 
             return _jwtService.ValidateToken(token);
         }
+            /****************************************************
+         * GET: /Admin/Advertisements
+         * Zarządzanie ogłoszeniami
+         ****************************************************/
+        [HttpGet]
+        public async Task<IActionResult> Advertisements()
+        {
+            if (!await IsAdmin())
+                return RedirectToAction("Index", "Home");
+
+            return View();
+        }
+
+        /****************************************************
+         * GET: /Admin/GetPendingAdvertisements
+         * API - Pobiera ogłoszenia oczekujące na weryfikację
+         ****************************************************/
+        [HttpGet]
+        public async Task<IActionResult> GetPendingAdvertisements()
+        {
+            if (!await IsAdmin())
+                return Unauthorized(new { success = false, message = "Brak uprawnień" });
+
+            var advertisements = await _context.Advertisements
+                .Include(a => a.User)
+                .Where(a => a.Status == "Pending")
+                .Select(a => new
+                {
+                    a.Id,
+                    a.Brand,
+                    a.Model,
+                    a.Year,
+                    a.Color,
+                    a.Mileage,
+                    a.Engine,
+                    a.Price,
+                    a.Description,
+                    a.CreatedAt,
+                    Username = a.User.Username
+                })
+                .OrderByDescending(a => a.CreatedAt)
+                .ToListAsync();
+
+            return Ok(new { success = true, advertisements });
+        }
+
+        /****************************************************
+         * PUT: /Admin/ApproveAdvertisement/{id}
+         * API - Zatwierdza ogłoszenie
+         ****************************************************/
+        [HttpPut]
+        public async Task<IActionResult> ApproveAdvertisement(int id)
+        {
+            if (!await IsAdmin())
+                return Unauthorized(new { success = false, message = "Brak uprawnień" });
+
+            var advertisement = await _context.Advertisements.FindAsync(id);
+            
+            if (advertisement == null)
+                return NotFound(new { success = false, message = "Ogłoszenie nie istnieje" });
+
+            advertisement.Status = "Approved";
+            advertisement.ApprovedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Ogłoszenie zostało zatwierdzone" });
+        }
+
+        /****************************************************
+         * PUT: /Admin/RejectAdvertisement/{id}
+         * API - Odrzuca ogłoszenie
+         ****************************************************/
+        [HttpPut]
+        public async Task<IActionResult> RejectAdvertisement(int id)
+        {
+            if (!await IsAdmin())
+                return Unauthorized(new { success = false, message = "Brak uprawnień" });
+
+            var advertisement = await _context.Advertisements.FindAsync(id);
+            
+            if (advertisement == null)
+                return NotFound(new { success = false, message = "Ogłoszenie nie istnieje" });
+
+            advertisement.Status = "Rejected";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true, message = "Ogłoszenie zostało odrzucone" });
+        }
     }
 }
