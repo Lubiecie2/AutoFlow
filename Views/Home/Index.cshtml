@@ -128,5 +128,52 @@
                 container.appendChild(card);
             });
         }
+
+        function displayAdvertisements(advertisements) {
+            const container = document.getElementById('advertisementsList');
+            container.innerHTML = '';
+    
+            advertisements.forEach(ad => {
+                const card = document.createElement('div');
+                card.className = 'ad-card';
+                card.style.cursor = 'pointer';
+                card.onclick = () => window.location.href = `/Advertisement/Details/${ad.id}`;
+        
+                const createdDate = new Date(ad.createdAt).toLocaleDateString('pl-PL');
+                const price = ad.price.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        
+                card.innerHTML = `
+                    <div class="ad-header">
+                        <h3>${ad.brand} ${ad.model}</h3>
+                        <span class="ad-price">${price} PLN</span>
+                    </div>
+                    <div class="ad-details">
+                        <div class="ad-detail-item">
+                            <span class="detail-icon">📅</span>
+                            <span>${ad.year}</span>
+                        </div>
+                        <div class="ad-detail-item">
+                            <span class="detail-icon">🎨</span>
+                            <span>${ad.color}</span>
+                        </div>
+                        <div class="ad-detail-item">
+                            <span class="detail-icon">📏</span>
+                            <span>${ad.mileage.toLocaleString('pl-PL')} km</span>
+                        </div>
+                        <div class="ad-detail-item">
+                            <span class="detail-icon">⚙️</span>
+                            <span>${ad.engine}</span>
+                        </div>
+                    </div>
+                    ${ad.description ? `<p class="ad-description">${ad.description}</p>` : ''}
+                    <div class="ad-footer">
+                        <span class="ad-author">👤 ${ad.username}</span>
+                        <span class="ad-date">${createdDate}</span>
+                    </div>
+                `;
+        
+                container.appendChild(card);
+            });
+        }
     </script>
 }

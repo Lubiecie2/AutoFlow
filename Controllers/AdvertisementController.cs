@@ -159,5 +159,28 @@ namespace AutoFlow.Controllers
 
             return _jwtService.ValidateToken(token);
         }
+        /****************************************************
+         * GET: /Advertisement/Details/{id}
+         * Wyświetla szczegóły ogłoszenia
+         ****************************************************/
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var advertisement = await _context.Advertisements
+                    .Include(a => a.User)
+                    .FirstOrDefaultAsync(a => a.Id == id && a.Status == "Approved");
+
+                if (advertisement == null)
+                    return NotFound();
+
+                return View(advertisement);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Błąd serwera");
+            }
+        }
     }
 }

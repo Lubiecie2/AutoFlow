@@ -1,0 +1,124 @@
+﻿@model AutoFlow.Models.Advertisement
+
+@{
+    ViewData["Title"] = $"{Model.Brand} {Model.Model} - {Model.Year}";
+}
+
+<link rel="stylesheet" href="~/css/advertisement-details.css" asp-append-version="true" />
+
+<div class="details-container">
+    <div class="details-header">
+        <button class="btn-back" onclick="window.history.back()">
+            ← Powrót
+        </button>
+        <h1>@Model.Brand @Model.Model</h1>
+    </div>
+
+    <div class="details-content">
+        <div class="details-main">
+            <div class="details-card">
+                <div class="card-header">
+                    <h2>Informacje o pojeździe</h2>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-icon">🚗</span>
+                        <div class="info-text">
+                            <span class="info-label">Marka</span>
+                            <span class="info-value">@Model.Brand</span>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-icon">🏷️</span>
+                        <div class="info-text">
+                            <span class="info-label">Model</span>
+                            <span class="info-value">@Model.Model</span>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-icon">📅</span>
+                        <div class="info-text">
+                            <span class="info-label">Rok produkcji</span>
+                            <span class="info-value">@Model.Year</span>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-icon">🎨</span>
+                        <div class="info-text">
+                            <span class="info-label">Kolor</span>
+                            <span class="info-value">@Model.Color</span>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-icon">📏</span>
+                        <div class="info-text">
+                            <span class="info-label">Przebieg</span>
+                            <span class="info-value">@Model.Mileage.ToString("N0") km</span>
+                        </div>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-icon">⚙️</span>
+                        <div class="info-text">
+                            <span class="info-label">Silnik</span>
+                            <span class="info-value">@Model.Engine</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <div class="description-section">
+                        <h3>📝 Opis</h3>
+                        <p>@Model.Description</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="details-sidebar">
+            <div class="price-card">
+                <h3>Cena</h3>
+                <div class="price-amount">@Model.Price.ToString("N2") PLN</div>
+            </div>
+
+            <div class="seller-card">
+                <h3>Sprzedający</h3>
+                <div class="seller-info">
+                    <div class="seller-avatar">
+                        <span>👤</span>
+                    </div>
+                    <div class="seller-details">
+                        <p class="seller-name">@Model.User.Username</p>
+                        <p class="seller-date">Członek od: @Model.User.CreatedAt.ToString("dd.MM.yyyy")</p>
+                    </div>
+                </div>
+                <button class="btn-contact">📧 Skontaktuj się</button>
+            </div>
+
+            <div class="meta-card">
+                <h3>Informacje o ogłoszeniu</h3>
+                <div class="meta-item">
+                    <span class="meta-label">Data dodania:</span>
+                    <span class="meta-value">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                </div>
+                @if (Model.ApprovedAt.HasValue)
+                {
+                    <div class="meta-item">
+                        <span class="meta-label">Zatwierdzone:</span>
+                        <span class="meta-value">@Model.ApprovedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                    </div>
+                }
+                <div class="meta-item">
+                    <span class="meta-label">ID ogłoszenia:</span>
+                    <span class="meta-value">#@Model.Id</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
