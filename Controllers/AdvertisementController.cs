@@ -11,16 +11,18 @@ namespace AutoFlow.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IJwtService _jwtService;
+        private readonly IWebHostEnvironment _environment;
 
-        public AdvertisementController(ApplicationDbContext context, IJwtService jwtService)
+        public AdvertisementController(ApplicationDbContext context, IJwtService jwtService, IWebHostEnvironment environment)
         {
             _context = context;
             _jwtService = jwtService;
+            _environment = environment;
         }
 
         /****************************************************
          * GET: /Advertisement/Create
-         * Wyświetla formularz tworzenia ogłoszenia
+         * Strona dodawania nowego ogłoszenia
          ****************************************************/
         [HttpGet]
         public async Task<IActionResult> Create()
@@ -33,11 +35,12 @@ namespace AutoFlow.Controllers
         }
 
         /****************************************************
-         * POST: /Advertisement/Create
-         * Tworzy nowe ogłoszenie
+         * POST: /Advertisement/CreateWithImages
+         * Tworzy nowe ogłoszenie z przesłanymi zdjęciami
          ****************************************************/
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateAdvertisementDto model)
+        [RequestSizeLimit(52428800)] // 50MB
+        public async Task<IActionResult> CreateWithImages()
         {
             try
             {
@@ -45,25 +48,113 @@ namespace AutoFlow.Controllers
                 if (userId == null)
                     return Unauthorized(new { success = false, message = "Musisz być zalogowany" });
 
-                if (!ModelState.IsValid)
-                    return BadRequest(new { success = false, message = "Nieprawidłowe dane" });
+                var form = await Request.ReadFormAsync();
+                
+                var brand = form["Brand"].ToString().Trim();
+                var model = form["Model"].ToString().Trim();
+                var yearStr = form["Year"].ToString();
+                var color = form["Color"].ToString().Trim();
+                var mileageStr = form["Mileage"].ToString();
+                var engine = form["Engine"].ToString().Trim();
+                var priceStr = form["Price"].ToString();
+                var description = form["Description"].ToString().Trim();
+                var mainImageIndexStr = form["MainImageIndex"].ToString();
+                var images = form.Files.GetFiles("Images");
 
+                // Walidacja
+                if (string.IsNullOrEmpty(brand) || brand.Length > 100)
+                    return BadRequest(new { success = false, message = "Marka jest wymagana (max 100 znaków)" });
+
+                if (string.IsNullOrEmpty(model) || model.Length > 100)
+                    return BadRequest(new { success = false, message = "Model jest wymagany (max 100 znaków)" });
+
+                if (!int.TryParse(yearStr, out int year) || year < 1900 || year > 2100)
+                    return BadRequest(new { success = false, message = "Rocznik musi być między 1900 a 2100" });
+
+                if (string.IsNullOrEmpty(color) || color.Length > 50)
+                    return BadRequest(new { success = false, message = "Kolor jest wymagany (max 50 znaków)" });
+
+                if (!int.TryParse(mileageStr, out int mileage) || mileage < 0 || mileage > 999999999)
+                    return BadRequest(new { success = false, message = "Przebieg musi być między 0 a 999999999" });
+
+                if (string.IsNullOrEmpty(engine) || engine.Length > 100)
+                    return BadRequest(new { success = false, message = "Silnik jest wymagany (max 100 znaków)" });
+
+                if (!decimal.TryParse(priceStr, out decimal price) || price < 0.01m)
+                    return BadRequest(new { success = false, message = "Cena musi być większa niż 0" });
+
+                if (description.Length > 1000)
+                    return BadRequest(new { success = false, message = "Opis może mieć maksymalnie 1000 znaków" });
+
+                if (!int.TryParse(mainImageIndexStr, out int mainImageIndex))
+                    mainImageIndex = 0;
+
+                if (images == null || images.Count == 0)
+                    return BadRequest(new { success = false, message = "Musisz dodać co najmniej 1 zdjęcie" });
+
+                if (images.Count > 10)
+                    return BadRequest(new { success = false, message = "Maksymalnie można dodać 10 zdjęć" });
+
+                if (mainImageIndex < 0 || mainImageIndex >= images.Count)
+                    return BadRequest(new { success = false, message = "Nieprawidłowy indeks zdjęcia głównego" });
+
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+                foreach (var image in images)
+                {
+                    var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+                    if (!allowedExtensions.Contains(extension))
+                        return BadRequest(new { success = false, message = $"Nieprawidłowy format pliku: {image.FileName}" });
+
+                    if (image.Length > 5242880)
+                        return BadRequest(new { success = false, message = $"Zdjęcie {image.FileName} jest za duże (max 5MB)" });
+                }
+
+                // Tworzenie ogłoszenia
                 var advertisement = new Advertisement
                 {
                     UserId = userId.Value,
-                    Brand = model.Brand,
-                    Model = model.Model,
-                    Year = model.Year,
-                    Color = model.Color,
-                    Mileage = model.Mileage,
-                    Engine = model.Engine,
-                    Price = model.Price,
-                    Description = model.Description,
+                    Brand = brand,
+                    Model = model,
+                    Year = year,
+                    Color = color,
+                    Mileage = mileage,
+                    Engine = engine,
+                    Price = price,
+                    Description = description,
                     Status = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.Advertisements.Add(advertisement);
+                await _context.SaveChangesAsync();
+
+                // Zapisywanie obrazów
+                var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "advertisements", advertisement.Id.ToString());
+                Directory.CreateDirectory(uploadsFolder);
+
+                for (int i = 0; i < images.Count; i++)
+                {
+                    var image = images[i];
+                    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(image.FileName)}";
+                    var filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await image.CopyToAsync(stream);
+                    }
+
+                    var advertisementImage = new AdvertisementImage
+                    {
+                        AdvertisementId = advertisement.Id,
+                        ImagePath = $"/uploads/advertisements/{advertisement.Id}/{fileName}",
+                        IsMainImage = (i == mainImageIndex),
+                        DisplayOrder = i,
+                        UploadedAt = DateTime.UtcNow
+                    };
+
+                    _context.AdvertisementImages.Add(advertisementImage);
+                }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(new { success = true, message = "Ogłoszenie zostało dodane i oczekuje na weryfikację", advertisementId = advertisement.Id });
@@ -76,7 +167,7 @@ namespace AutoFlow.Controllers
 
         /****************************************************
          * GET: /Advertisement/GetAll
-         * Pobiera wszystkie zatwierdzone ogłoszenia
+         * API - Pobiera wszystkie zatwierdzone ogłoszenia
          ****************************************************/
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -85,6 +176,7 @@ namespace AutoFlow.Controllers
             {
                 var advertisements = await _context.Advertisements
                     .Include(a => a.User)
+                    .Include(a => a.Images)
                     .Where(a => a.Status == "Approved")
                     .Select(a => new
                     {
@@ -98,7 +190,13 @@ namespace AutoFlow.Controllers
                         a.Price,
                         a.Description,
                         a.CreatedAt,
-                        Username = a.User.Username
+                        Username = a.User.Username,
+                        MainImage = a.Images.FirstOrDefault(i => i.IsMainImage) != null 
+                            ? a.Images.FirstOrDefault(i => i.IsMainImage)!.ImagePath 
+                            : a.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault() != null 
+                                ? a.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault()!.ImagePath 
+                                : null,
+                        ImageCount = a.Images.Count
                     })
                     .OrderByDescending(a => a.CreatedAt)
                     .ToListAsync();
@@ -112,8 +210,70 @@ namespace AutoFlow.Controllers
         }
 
         /****************************************************
+         * GET: /Advertisement/Details/{id}
+         * Strona szczegółów ogłoszenia (tylko Approved)
+         ****************************************************/
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            try
+            {
+                var advertisement = await _context.Advertisements
+                    .Include(a => a.User)
+                    .Include(a => a.Images)
+                    .FirstOrDefaultAsync(a => a.Id == id && a.Status == "Approved");
+
+                if (advertisement == null)
+                    return NotFound();
+
+                return View(advertisement);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Błąd serwera");
+            }
+        }
+
+        /****************************************************
+         * GET: /Advertisement/AdminPreview/{id}
+         * Podgląd ogłoszenia dla administratora (wszystkie statusy)
+         ****************************************************/
+        [HttpGet]
+        public async Task<IActionResult> AdminPreview(int id)
+        {
+            var token = Request.Cookies["AuthToken"];
+            if (string.IsNullOrEmpty(token))
+                return RedirectToAction("Login", "Account");
+
+            var userId = _jwtService.ValidateToken(token);
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            var user = await _context.Users.FindAsync(userId.Value);
+            if (user?.Role != "Admin")
+                return Forbid();
+
+            try
+            {
+                var advertisement = await _context.Advertisements
+                    .Include(a => a.User)
+                    .Include(a => a.Images)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+
+                if (advertisement == null)
+                    return NotFound();
+
+                return View("Details", advertisement);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Błąd serwera");
+            }
+        }
+
+        /****************************************************
          * GET: /Advertisement/MyAdvertisements
-         * Pobiera ogłoszenia zalogowanego użytkownika
+         * API - Pobiera ogłoszenia zalogowanego użytkownika
          ****************************************************/
         [HttpGet]
         public async Task<IActionResult> MyAdvertisements()
@@ -125,6 +285,7 @@ namespace AutoFlow.Controllers
                     return Unauthorized(new { success = false, message = "Musisz być zalogowany" });
 
                 var advertisements = await _context.Advertisements
+                    .Include(a => a.Images)
                     .Where(a => a.UserId == userId.Value)
                     .Select(a => new
                     {
@@ -138,7 +299,12 @@ namespace AutoFlow.Controllers
                         a.Price,
                         a.Description,
                         a.Status,
-                        a.CreatedAt
+                        a.CreatedAt,
+                        MainImage = a.Images.FirstOrDefault(i => i.IsMainImage) != null 
+                            ? a.Images.FirstOrDefault(i => i.IsMainImage)!.ImagePath 
+                            : a.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault() != null 
+                                ? a.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault()!.ImagePath 
+                                : null
                     })
                     .OrderByDescending(a => a.CreatedAt)
                     .ToListAsync();
@@ -151,6 +317,9 @@ namespace AutoFlow.Controllers
             }
         }
 
+        /****************************************************
+         * Metoda pomocnicza - pobiera ID zalogowanego użytkownika
+         ****************************************************/
         private async Task<int?> GetCurrentUserId()
         {
             var token = Request.Cookies["AuthToken"];
@@ -158,29 +327,6 @@ namespace AutoFlow.Controllers
                 return null;
 
             return _jwtService.ValidateToken(token);
-        }
-        /****************************************************
-         * GET: /Advertisement/Details/{id}
-         * Wyświetla szczegóły ogłoszenia
-         ****************************************************/
-        [HttpGet]
-        public async Task<IActionResult> Details(int id)
-        {
-            try
-            {
-                var advertisement = await _context.Advertisements
-                    .Include(a => a.User)
-                    .FirstOrDefaultAsync(a => a.Id == id && a.Status == "Approved");
-
-                if (advertisement == null)
-                    return NotFound();
-
-                return View(advertisement);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Błąd serwera");
-            }
         }
     }
 }

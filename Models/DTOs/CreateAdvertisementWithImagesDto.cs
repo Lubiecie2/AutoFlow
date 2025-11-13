@@ -1,19 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AutoFlow.Models
+namespace AutoFlow.Models.DTOs
 {
-    public class Advertisement
+    public class CreateAdvertisementWithImagesDto
     {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
-        public int UserId { get; set; }
-
-        [ForeignKey("UserId")]
-        public User User { get; set; } = null!;
-
         [Required]
         [MaxLength(100)]
         public string Brand { get; set; } = null!;
@@ -23,6 +13,7 @@ namespace AutoFlow.Models
         public string Model { get; set; } = null!;
 
         [Required]
+        [Range(1900, 2100)]
         public int Year { get; set; }
 
         [Required]
@@ -30,6 +21,7 @@ namespace AutoFlow.Models
         public string Color { get; set; } = null!;
 
         [Required]
+        [Range(0, 999999999)]
         public int Mileage { get; set; }
 
         [Required]
@@ -37,20 +29,10 @@ namespace AutoFlow.Models
         public string Engine { get; set; } = null!;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
+        [Range(0.01, double.MaxValue)]
         public decimal Price { get; set; }
 
         [MaxLength(1000)]
         public string? Description { get; set; }
-
-        [Required]
-        [MaxLength(50)]
-        public string Status { get; set; } = "Pending";
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? ApprovedAt { get; set; }
-
-        public ICollection<AdvertisementImage> Images { get; set; } = new List<AdvertisementImage>();
     }
 }

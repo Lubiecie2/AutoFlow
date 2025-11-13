@@ -6,18 +6,90 @@
 <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
 
 <div class="home-container">
-    <section class="hero-section">
-        <h1>🚗 Witaj w AutoFlow</h1>
-        <p>Twój rynek motoryzacyjny - kup lub sprzedaj pojazd w prosty sposób</p>
-        
-        <div id="userActions" class="action-buttons">
+    <section class="top-section">
+        <div class="top-section-wrapper">
+
+            <aside class="filters-box">
+                <h2 class="filters-title">🔍 Wyszukaj swój samochód</h2>
+                
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="filterBrand">Marka</label>
+                        <select id="filterBrand" class="filter-input">
+                            <option value="">Wszystkie marki</option>
+                            <option value="BMW">BMW</option>
+                            <option value="Audi">Audi</option>
+                            <option value="Mercedes">Mercedes-Benz</option>
+                            <option value="Volkswagen">Volkswagen</option>
+                            <option value="Toyota">Toyota</option>
+                            <option value="Ford">Ford</option>
+                            <option value="Opel">Opel</option>
+                            <option value="Skoda">Škoda</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterModel">Model</label>
+                        <input type="text" id="filterModel" class="filter-input" placeholder="np. Seria 3, A4">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterYearFrom">Rok od</label>
+                        <input type="number" id="filterYearFrom" class="filter-input" placeholder="2015" min="1900" max="2025">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterYearTo">Rok do</label>
+                        <input type="number" id="filterYearTo" class="filter-input" placeholder="2023" min="1900" max="2025">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterPriceFrom">Cena od (PLN)</label>
+                        <input type="number" id="filterPriceFrom" class="filter-input" placeholder="10 000" min="0">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filterPriceTo">Cena do (PLN)</label>
+                        <input type="number" id="filterPriceTo" class="filter-input" placeholder="50 000" min="0">
+                    </div>
+                </div>
+
+                <div class="filter-buttons">
+                    <button class="btn-search" onclick="searchAdvertisements()">Szukaj</button>
+                    <button class="btn-reset" onclick="resetFilters()">Wyczyść filtry</button>
+                </div>
+            </aside>
+
+            <div class="hero-text">
+                <h1>Znajdź wymarzony<br>samochód</h1>
+                <p>Tysiące ofert w jednym miejscu.<br>Bezpieczne i szybkie transakcje.</p>
+                
+                <div class="hero-features">
+                    <div class="feature-item">
+                        <span class="icon">✅</span>
+                        <span>Zweryfikowane ogłoszenia</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="icon">🚗</span>
+                        <span>Szeroki wybór aut</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="icon">💰</span>
+                        <span>Najlepsze ceny</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="icon">⚡</span>
+                        <span>Szybki kontakt</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <section class="advertisements-section">
+    <section class="featured-section">
         <div class="section-header">
-            <h2>📋 Najnowsze ogłoszenia</h2>
-            <p>Przeglądaj aktualne oferty samochodów</p>
+            <h2>⭐ Polecane ogłoszenia</h2>
+            <p id="resultsCount">Sprawdź najlepsze oferty</p>
         </div>
 
         <div id="loadingSpinner" class="loading">
@@ -25,43 +97,21 @@
             <p>Ładowanie ogłoszeń...</p>
         </div>
 
-        <div id="advertisementsList" class="advertisements-grid"></div>
-        
+        <div id="featuredGrid" class="featured-grid"></div>
+
         <div id="noAdvertisements" class="no-data" style="display: none;">
-            <p>🔍 Brak ogłoszeń do wyświetlenia</p>
+            <p>🔍 Brak ogłoszeń spełniających kryteria</p>
         </div>
     </section>
 </div>
 
 @section Scripts {
     <script>
+        let allAdvertisements = [];
+
         document.addEventListener('DOMContentLoaded', async function() {
-            await checkAuthAndUpdateActions();
             await loadAdvertisements();
         });
-
-        async function checkAuthAndUpdateActions() {
-            try {
-                const response = await fetch('/Account/CurrentUser');
-                const data = await response.json();
-                
-                const actionsDiv = document.getElementById('userActions');
-                
-                if (data.success && data.isAuthenticated) {
-                    actionsDiv.innerHTML = `
-                        <a href="/Advertisement/Create" class="btn-primary">➕ Dodaj ogłoszenie</a>
-                        <a href="/Profile/Index" class="btn-secondary">👤 Mój profil</a>
-                    `;
-                } else {
-                    actionsDiv.innerHTML = `
-                        <a href="/Account/Login" class="btn-primary">Zaloguj się</a>
-                        <a href="/Account/Register" class="btn-secondary">Zarejestruj się</a>
-                    `;
-                }
-            } catch (error) {
-                console.error('Błąd sprawdzania autoryzacji:', error);
-            }
-        }
 
         async function loadAdvertisements() {
             try {
@@ -69,15 +119,15 @@
                 const data = await response.json();
                 
                 const loadingSpinner = document.getElementById('loadingSpinner');
-                const advertisementsList = document.getElementById('advertisementsList');
-                const noAdvertisements = document.getElementById('noAdvertisements');
                 
                 loadingSpinner.style.display = 'none';
                 
                 if (data.success && data.advertisements.length > 0) {
-                    displayAdvertisements(data.advertisements);
+                    allAdvertisements = data.advertisements;
+                    displayAdvertisements(allAdvertisements);
+                    updateResultsCount(allAdvertisements.length);
                 } else {
-                    noAdvertisements.style.display = 'block';
+                    document.getElementById('noAdvertisements').style.display = 'block';
                 }
             } catch (error) {
                 console.error('Błąd ładowania ogłoszeń:', error);
@@ -85,95 +135,98 @@
         }
 
         function displayAdvertisements(advertisements) {
-            const container = document.getElementById('advertisementsList');
+            const container = document.getElementById('featuredGrid');
+            const noAdvertisements = document.getElementById('noAdvertisements');
+            
             container.innerHTML = '';
             
-            advertisements.forEach(ad => {
-                const card = document.createElement('div');
-                card.className = 'ad-card';
-                
-                const createdDate = new Date(ad.createdAt).toLocaleDateString('pl-PL');
-                const price = ad.price.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                
-                card.innerHTML = `
-                    <div class="ad-header">
-                        <h3>${ad.brand} ${ad.model}</h3>
-                        <span class="ad-price">${price} PLN</span>
-                    </div>
-                    <div class="ad-details">
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">📅</span>
-                            <span>${ad.year}</span>
-                        </div>
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">🎨</span>
-                            <span>${ad.color}</span>
-                        </div>
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">📏</span>
-                            <span>${ad.mileage.toLocaleString('pl-PL')} km</span>
-                        </div>
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">⚙️</span>
-                            <span>${ad.engine}</span>
-                        </div>
-                    </div>
-                    ${ad.description ? `<p class="ad-description">${ad.description}</p>` : ''}
-                    <div class="ad-footer">
-                        <span class="ad-author">👤 ${ad.username}</span>
-                        <span class="ad-date">${createdDate}</span>
-                    </div>
-                `;
-                
+            if (advertisements.length === 0) {
+                container.style.display = 'none';
+                noAdvertisements.style.display = 'block';
+                return;
+            }
+
+            container.style.display = 'grid';
+            noAdvertisements.style.display = 'none';
+
+        
+            const toDisplay = advertisements.slice(0, 6);
+
+            toDisplay.forEach(ad => {
+                const card = createCard(ad);
                 container.appendChild(card);
             });
         }
 
-        function displayAdvertisements(advertisements) {
-            const container = document.getElementById('advertisementsList');
-            container.innerHTML = '';
-    
-            advertisements.forEach(ad => {
-                const card = document.createElement('div');
-                card.className = 'ad-card';
-                card.style.cursor = 'pointer';
-                card.onclick = () => window.location.href = `/Advertisement/Details/${ad.id}`;
-        
-                const createdDate = new Date(ad.createdAt).toLocaleDateString('pl-PL');
-                const price = ad.price.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        
-                card.innerHTML = `
-                    <div class="ad-header">
-                        <h3>${ad.brand} ${ad.model}</h3>
-                        <span class="ad-price">${price} PLN</span>
+        function createCard(ad) {
+            const card = document.createElement('div');
+            card.className = 'featured-card';
+            card.style.cursor = 'pointer';
+            card.onclick = () => window.location.href = `/Advertisement/Details/${ad.id}`;
+
+            const price = ad.price.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            const imageUrl = ad.mainImage || '/images/no-image.jpg';
+
+            card.innerHTML = `
+                <div class="card-image" style="background-image: url('${imageUrl}')">
+                    ${ad.imageCount > 1 ? `<div class="photo-badge">📷 ${ad.imageCount}</div>` : ''}
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">${ad.brand} ${ad.model}</h3>
+                    <div class="card-specs">
+                        <span>📅 ${ad.year}</span>
+                        <span>📏 ${ad.mileage.toLocaleString('pl-PL')} km</span>
+                        <span>⚙️ ${ad.engine}</span>
                     </div>
-                    <div class="ad-details">
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">📅</span>
-                            <span>${ad.year}</span>
-                        </div>
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">🎨</span>
-                            <span>${ad.color}</span>
-                        </div>
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">📏</span>
-                            <span>${ad.mileage.toLocaleString('pl-PL')} km</span>
-                        </div>
-                        <div class="ad-detail-item">
-                            <span class="detail-icon">⚙️</span>
-                            <span>${ad.engine}</span>
-                        </div>
+                    <div class="card-footer">
+                        <span class="card-price">${price} PLN</span>
+                        <span class="card-author">👤 ${ad.username}</span>
                     </div>
-                    ${ad.description ? `<p class="ad-description">${ad.description}</p>` : ''}
-                    <div class="ad-footer">
-                        <span class="ad-author">👤 ${ad.username}</span>
-                        <span class="ad-date">${createdDate}</span>
-                    </div>
-                `;
-        
-                container.appendChild(card);
+                </div>
+            `;
+
+            return card;
+        }
+
+        function searchAdvertisements() {
+            const brand = document.getElementById('filterBrand').value.toLowerCase();
+            const model = document.getElementById('filterModel').value.toLowerCase();
+            const yearFrom = parseInt(document.getElementById('filterYearFrom').value) || 0;
+            const yearTo = parseInt(document.getElementById('filterYearTo').value) || 9999;
+            const priceFrom = parseFloat(document.getElementById('filterPriceFrom').value) || 0;
+            const priceTo = parseFloat(document.getElementById('filterPriceTo').value) || Infinity;
+
+            const filtered = allAdvertisements.filter(ad => {
+                const matchBrand = !brand || ad.brand.toLowerCase().includes(brand);
+                const matchModel = !model || ad.model.toLowerCase().includes(model);
+                const matchYear = ad.year >= yearFrom && ad.year <= yearTo;
+                const matchPrice = ad.price >= priceFrom && ad.price <= priceTo;
+
+                return matchBrand && matchModel && matchYear && matchPrice;
             });
+
+            displayAdvertisements(filtered);
+            updateResultsCount(filtered.length);
+
+            // Scroll do wyników
+            document.querySelector('.featured-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetFilters() {
+            document.getElementById('filterBrand').value = '';
+            document.getElementById('filterModel').value = '';
+            document.getElementById('filterYearFrom').value = '';
+            document.getElementById('filterYearTo').value = '';
+            document.getElementById('filterPriceFrom').value = '';
+            document.getElementById('filterPriceTo').value = '';
+
+            displayAdvertisements(allAdvertisements);
+            updateResultsCount(allAdvertisements.length);
+        }
+
+        function updateResultsCount(count) {
+            const resultsCount = document.getElementById('resultsCount');
+            resultsCount.textContent = `Znaleziono ${count} ${count === 1 ? 'ogłoszenie' : count < 5 && count > 1 ? 'ogłoszenia' : 'ogłoszeń'}`;
         }
     </script>
 }

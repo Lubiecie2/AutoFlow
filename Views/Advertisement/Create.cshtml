@@ -5,81 +5,372 @@
 <link rel="stylesheet" href="~/css/advertisement.css" asp-append-version="true" />
 
 <div class="advertisement-container">
-    <div class="form-card">
-        <div class="form-header">
-            <h1>📝 Dodaj nowe ogłoszenie</h1>
-            <p>Wypełnij formularz, aby dodać ogłoszenie o sprzedaży samochodu</p>
-        </div>
+    <div class="container-wrapper">
+        <div class="form-section">
+            <div class="form-header">
+                <h1>📝 Dodaj ogłoszenie</h1>
+                <p>Wypełnij formularz i dodaj zdjęcia</p>
+            </div>
 
-        <form id="advertisementForm">
-            <div class="form-grid">
+            <form id="advertisementForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="brand">Marka *</label>
-                    <input type="text" id="brand" name="brand" required placeholder="np. BMW, Audi, Mercedes" />
+                    <input type="text" id="brand" name="brand" required placeholder="np. BMW" />
                 </div>
 
                 <div class="form-group">
                     <label for="model">Model *</label>
-                    <input type="text" id="model" name="model" required placeholder="np. 320i, A4, C-Class" />
+                    <input type="text" id="model" name="model" required placeholder="np. 320i" />
                 </div>
 
                 <div class="form-group">
                     <label for="year">Rocznik *</label>
-                    <input type="number" id="year" name="year" required min="1900" max="2100" placeholder="np. 2020" />
+                    <input type="number" id="year" name="year" required min="1900" max="2100" placeholder="2020" />
                 </div>
 
                 <div class="form-group">
                     <label for="color">Kolor *</label>
-                    <input type="text" id="color" name="color" required placeholder="np. Czarny, Biały, Czerwony" />
+                    <input type="text" id="color" name="color" required placeholder="Czarny" />
                 </div>
 
                 <div class="form-group">
                     <label for="mileage">Przebieg (km) *</label>
-                    <input type="number" id="mileage" name="mileage" required min="0" placeholder="np. 50000" />
+                    <input type="number" id="mileage" name="mileage" required min="0" placeholder="50000" />
                 </div>
 
                 <div class="form-group">
                     <label for="engine">Silnik *</label>
-                    <input type="text" id="engine" name="engine" required placeholder="np. 2.0 TDI, 1.6 Benzyna" />
+                    <input type="text" id="engine" name="engine" required placeholder="2.0 TDI" />
                 </div>
 
-                <div class="form-group full-width">
+                <div class="form-group">
                     <label for="price">Cena (PLN) *</label>
-                    <input type="number" id="price" name="price" required min="0.01" step="0.01" placeholder="np. 45000" />
+                    <input type="number" id="price" name="price" required min="0.01" step="0.01" placeholder="45000" />
                 </div>
 
                 <div class="form-group full-width">
-                    <label for="description">Opis (opcjonalny)</label>
-                    <textarea id="description" name="description" rows="4" placeholder="Dodatkowe informacje o samochodzie..."></textarea>
+                    <label for="description">Opis</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Dodatkowe informacje..."></textarea>
+                </div>
+
+                <!-- SEKCJA ZDJĘĆ -->
+                <div class="form-group full-width">
+                    <label>Zdjęcia (min. 1, max. 10) *</label>
+                    <div class="image-upload-area">
+                        <input type="file" id="imageInput" accept="image/jpeg,image/jpg,image/png,image/webp" multiple style="display: none;" />
+                        <button type="button" class="btn-upload" onclick="document.getElementById('imageInput').click()">
+                            📷 Dodaj zdjęcia
+                        </button>
+                        <p class="upload-hint">Akceptowane formaty: JPG, PNG, WEBP (max 5MB każde)</p>
+                    </div>
+                    <div id="imagePreviewContainer" class="image-preview-container"></div>
+                </div>
+
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                <div id="successMessage" class="success-message" style="display: none;"></div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="window.location.href='/'">Anuluj</button>
+                    <button type="submit" class="btn-submit">📤 Opublikuj ogłoszenie</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="preview-section">
+            <div class="preview-header">
+                <h2>Podgląd ogłoszenia</h2> 
+            </div>
+
+            <div class="preview-content">
+                <div class="preview-images-card" id="previewImagesCard" style="display: none;">
+                    <div class="preview-main-image" id="previewMainImage">
+                        <img src="" alt="Główne zdjęcie" />
+                    </div>
+                    <div class="preview-thumbnails" id="previewThumbnails"></div>
+                </div>
+                <div class="preview-card">
+                    <div class="preview-card-header">
+                        <h2>Informacje o pojeździe</h2>
+                    </div>
+
+                    <div class="preview-info-grid">
+                        <div class="preview-info-item">
+                            <span class="preview-icon">🚗</span>
+                            <div class="preview-text">
+                                <span class="preview-label">Marka</span>
+                                <span class="preview-value" id="previewBrand">-</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-info-item">
+                            <span class="preview-icon">🏷️</span>
+                            <div class="preview-text">
+                                <span class="preview-label">Model</span>
+                                <span class="preview-value" id="previewModel">-</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-info-item">
+                            <span class="preview-icon">📅</span>
+                            <div class="preview-text">
+                                <span class="preview-label">Rok produkcji</span>
+                                <span class="preview-value" id="previewYear">-</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-info-item">
+                            <span class="preview-icon">🎨</span>
+                            <div class="preview-text">
+                                <span class="preview-label">Kolor</span>
+                                <span class="preview-value" id="previewColor">-</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-info-item">
+                            <span class="preview-icon">📏</span>
+                            <div class="preview-text">
+                                <span class="preview-label">Przebieg</span>
+                                <span class="preview-value" id="previewMileage">-</span>
+                            </div>
+                        </div>
+
+                        <div class="preview-info-item">
+                            <span class="preview-icon">⚙️</span>
+                            <div class="preview-text">
+                                <span class="preview-label">Silnik</span>
+                                <span class="preview-value" id="previewEngine">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="preview-description-section" id="previewDescriptionSection" style="display: none;">
+                        <h3>📝 Opis</h3>
+                        <p id="previewDescription"></p>
+                    </div>
+                </div>
+
+                <div class="preview-price-card">
+                    <h3>Cena</h3>
+                    <div class="preview-price-amount" id="previewPrice">0.00 PLN</div>
+                </div>
+
+                <div class="preview-seller-card">
+                    <h3>Sprzedający</h3>
+                    <div class="preview-seller-info">
+                        <div class="preview-seller-avatar">
+                            <span>👤</span>
+                        </div>
+                        <div class="preview-seller-details">
+                            <p class="preview-seller-name" id="previewUsername">-</p>
+                            <p class="preview-seller-date">Nowe ogłoszenie</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
-            <div id="successMessage" class="success-message" style="display: none;"></div>
-
-            <div class="form-actions">
-                <button type="button" class="btn-cancel" onclick="window.location.href='/'">Anuluj</button>
-                <button type="submit" class="btn-submit">Dodaj ogłoszenie</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <script>
+        let currentUsername = 'Użytkownik';
+        let uploadedImages = [];
+        let mainImageIndex = 0;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/Account/CurrentUser');
+                const data = await response.json();
+                
+                if (data.success && data.isAuthenticated) {
+                    currentUsername = data.username;
+                    document.getElementById('previewUsername').textContent = currentUsername;
+                }
+            } catch (error) {
+                console.error('Błąd pobierania użytkownika:', error);
+            }
+
+            setupLivePreview();
+            setupImageUpload();
+        });
+
+        function setupImageUpload() {
+            const imageInput = document.getElementById('imageInput');
+            
+            imageInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                
+                if (uploadedImages.length + files.length > 10) {
+                    showError('Maksymalnie można dodać 10 zdjęć');
+                    return;
+                }
+
+                files.forEach(file => {
+                    if (file.size > 5242880) {
+                        showError(`Plik ${file.name} jest za duży (max 5MB)`);
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedImages.push({
+                            file: file,
+                            dataUrl: event.target.result
+                        });
+                        displayImagePreviews();
+                        updatePreviewImages();
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                imageInput.value = '';
+            });
+        }
+
+        function displayImagePreviews() {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+
+            uploadedImages.forEach((img, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-preview-item' + (index === mainImageIndex ? ' main-image' : '');
+                
+                wrapper.innerHTML = `
+                    <img src="${img.dataUrl}" alt="Podgląd ${index + 1}" />
+                    <div class="image-preview-actions">
+                        ${index === mainImageIndex 
+                            ? '<span class="main-badge">⭐ Główne</span>' 
+                            : `<button type="button" class="btn-set-main" onclick="setMainImage(${index})">Ustaw jako główne</button>`
+                        }
+                        <button type="button" class="btn-remove-image" onclick="removeImage(${index})">🗑️</button>
+                    </div>
+                    <span class="image-number">${index + 1}</span>
+                `;
+                
+                container.appendChild(wrapper);
+            });
+        }
+
+        function setMainImage(index) {
+            mainImageIndex = index;
+            displayImagePreviews();
+            updatePreviewImages();
+        }
+
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            if (mainImageIndex >= uploadedImages.length) {
+                mainImageIndex = Math.max(0, uploadedImages.length - 1);
+            }
+            displayImagePreviews();
+            updatePreviewImages();
+        }
+
+        function updatePreviewImages() {
+            const previewCard = document.getElementById('previewImagesCard');
+            const mainImage = document.getElementById('previewMainImage');
+            const thumbnails = document.getElementById('previewThumbnails');
+
+            if (uploadedImages.length === 0) {
+                previewCard.style.display = 'none';
+                return;
+            }
+
+            previewCard.style.display = 'block';
+            mainImage.querySelector('img').src = uploadedImages[mainImageIndex].dataUrl;
+
+            thumbnails.innerHTML = '';
+            uploadedImages.forEach((img, index) => {
+                const thumb = document.createElement('div');
+                thumb.className = 'preview-thumb' + (index === mainImageIndex ? ' active' : '');
+                thumb.innerHTML = `<img src="${img.dataUrl}" alt="Miniatura ${index + 1}" />`;
+                thumb.onclick = () => {
+                    mainImageIndex = index;
+                    updatePreviewImages();
+                };
+                thumbnails.appendChild(thumb);
+            });
+        }
+
+        function setupLivePreview() {
+            document.getElementById('brand').addEventListener('input', function(e) {
+                document.getElementById('previewBrand').textContent = e.target.value || '-';
+            });
+
+            document.getElementById('model').addEventListener('input', function(e) {
+                document.getElementById('previewModel').textContent = e.target.value || '-';
+            });
+
+            document.getElementById('year').addEventListener('input', function(e) {
+                document.getElementById('previewYear').textContent = e.target.value || '-';
+            });
+
+            document.getElementById('color').addEventListener('input', function(e) {
+                document.getElementById('previewColor').textContent = e.target.value || '-';
+            });
+
+            document.getElementById('mileage').addEventListener('input', function(e) {
+                const value = e.target.value;
+                if (value) {
+                    const formatted = parseInt(value).toLocaleString('pl-PL');
+                    document.getElementById('previewMileage').textContent = formatted + ' km';
+                } else {
+                    document.getElementById('previewMileage').textContent = '-';
+                }
+            });
+
+            document.getElementById('engine').addEventListener('input', function(e) {
+                document.getElementById('previewEngine').textContent = e.target.value || '-';
+            });
+
+            document.getElementById('price').addEventListener('input', function(e) {
+                const value = e.target.value;
+                if (value) {
+                    const formatted = parseFloat(value).toLocaleString('pl-PL', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    document.getElementById('previewPrice').textContent = formatted + ' PLN';
+                } else {
+                    document.getElementById('previewPrice').textContent = '0.00 PLN';
+                }
+            });
+
+            document.getElementById('description').addEventListener('input', function(e) {
+                const descSection = document.getElementById('previewDescriptionSection');
+                const descText = document.getElementById('previewDescription');
+                
+                if (e.target.value.trim()) {
+                    descText.textContent = e.target.value;
+                    descSection.style.display = 'block';
+                } else {
+                    descSection.style.display = 'none';
+                }
+            });
+        }
+
         document.getElementById('advertisementForm').addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            if (uploadedImages.length === 0) {
+                showError('Musisz dodać co najmniej 1 zdjęcie');
+                return;
+            }
             
-            const formData = {
-                brand: document.getElementById('brand').value,
-                model: document.getElementById('model').value,
-                year: parseInt(document.getElementById('year').value),
-                color: document.getElementById('color').value,
-                mileage: parseInt(document.getElementById('mileage').value),
-                engine: document.getElementById('engine').value,
-                price: parseFloat(document.getElementById('price').value),
-                description: document.getElementById('description').value || null
-            };
+            const formData = new FormData();
+            formData.append('Brand', document.getElementById('brand').value);
+            formData.append('Model', document.getElementById('model').value);
+            formData.append('Year', document.getElementById('year').value);
+            formData.append('Color', document.getElementById('color').value);
+            formData.append('Mileage', document.getElementById('mileage').value);
+            formData.append('Engine', document.getElementById('engine').value);
+            formData.append('Price', document.getElementById('price').value);
+            formData.append('Description', document.getElementById('description').value || '');
+            formData.append('MainImageIndex', mainImageIndex);
+
+            uploadedImages.forEach((img, index) => {
+                formData.append('Images', img.file);
+            });
             
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
@@ -88,31 +379,40 @@
             successMessage.style.display = 'none';
             
             try {
-                const response = await fetch('/Advertisement/Create', {
+                const response = await fetch('/Advertisement/CreateWithImages', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
+                    body: formData
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    successMessage.textContent = data.message;
-                    successMessage.style.display = 'block';
+                    showSuccess(data.message);
                     
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/Profile/Index';
                     }, 2000);
                 } else {
-                    errorMessage.textContent = data.message;
-                    errorMessage.style.display = 'block';
+                    showError(data.message);
                 }
             } catch (error) {
-                errorMessage.textContent = 'Wystąpił błąd podczas dodawania ogłoszenia';
-                errorMessage.style.display = 'block';
+                showError('Wystąpił błąd podczas dodawania ogłoszenia');
+                console.error(error);
             }
         });
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     </script>
 }

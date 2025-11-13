@@ -7,118 +7,252 @@
 <link rel="stylesheet" href="~/css/advertisement-details.css" asp-append-version="true" />
 
 <div class="details-container">
-    <div class="details-header">
-        <button class="btn-back" onclick="window.history.back()">
-            ← Powrót
-        </button>
-        <h1>@Model.Brand @Model.Model</h1>
-    </div>
-
-    <div class="details-content">
-        <div class="details-main">
-            <div class="details-card">
-                <div class="card-header">
-                    <h2>Informacje o pojeździe</h2>
+    <div class="details-wrapper">
+        <div class="gallery-section">
+            @if (Model.Images != null && Model.Images.Any())
+            {
+                <div class="main-image-wrapper">
+                    @{
+                        var mainImage = Model.Images.FirstOrDefault(i => i.IsMainImage) 
+                            ?? Model.Images.OrderBy(i => i.DisplayOrder).First();
+                    }
+                    <img id="mainImage" 
+                         src="@mainImage.ImagePath" 
+                         alt="@Model.Brand @Model.Model" 
+                         class="main-image"
+                         onerror="this.src='/images/no-image.jpg'" />
+                    
+                    <button class="btn-back-overlay" onclick="window.history.back()">
+                        ← Powrót
+                    </button>
                 </div>
 
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-icon">🚗</span>
-                        <div class="info-text">
-                            <span class="info-label">Marka</span>
-                            <span class="info-value">@Model.Brand</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-icon">🏷️</span>
-                        <div class="info-text">
-                            <span class="info-label">Model</span>
-                            <span class="info-value">@Model.Model</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-icon">📅</span>
-                        <div class="info-text">
-                            <span class="info-label">Rok produkcji</span>
-                            <span class="info-value">@Model.Year</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-icon">🎨</span>
-                        <div class="info-text">
-                            <span class="info-label">Kolor</span>
-                            <span class="info-value">@Model.Color</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-icon">📏</span>
-                        <div class="info-text">
-                            <span class="info-label">Przebieg</span>
-                            <span class="info-value">@Model.Mileage.ToString("N0") km</span>
-                        </div>
-                    </div>
-
-                    <div class="info-item">
-                        <span class="info-icon">⚙️</span>
-                        <div class="info-text">
-                            <span class="info-label">Silnik</span>
-                            <span class="info-value">@Model.Engine</span>
-                        </div>
-                    </div>
-                </div>
-
-                @if (!string.IsNullOrEmpty(Model.Description))
+                @if (Model.Images.Count > 1)
                 {
-                    <div class="description-section">
-                        <h3>📝 Opis</h3>
-                        <p>@Model.Description</p>
+                    <div class="thumbnails-wrapper">
+                        <button class="scroll-btn scroll-left" onclick="scrollThumbnails('left')">
+                            ‹
+                        </button>
+                        
+                        <div class="thumbnails-container" id="thumbnailsContainer">
+                            @foreach (var image in Model.Images.OrderBy(i => i.DisplayOrder))
+                            {
+                                <div class="thumbnail-item @(image.Id == mainImage.Id ? "active" : "")"
+                                     onclick="changeMainImage('@image.ImagePath', this)">
+                                    <img src="@image.ImagePath" 
+                                         alt="Miniatura" 
+                                         onerror="this.parentElement.style.display='none'" />
+                                </div>
+                            }
+                        </div>
+                        
+                        <button class="scroll-btn scroll-right" onclick="scrollThumbnails('right')">
+                            ›
+                        </button>
                     </div>
                 }
+            }
+            else
+            {
+                <div class="no-images">
+                    <div class="btn-back-overlay" onclick="window.history.back()">
+                        ← Powrót
+                    </div>
+                    <p>📷 Brak zdjęć dla tego ogłoszenia</p>
+                </div>
+            }
+
+            <div class="basic-info-full">
+                <h2>🔧 Informacje o pojeździe</h2>
+                <div class="specs-grid-full">
+                    <div class="spec-item">
+                        <div class="spec-icon">🚗</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Marka</span>
+                            <span class="spec-value">@Model.Brand</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item">
+                        <div class="spec-icon">🏷️</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Model</span>
+                            <span class="spec-value">@Model.Model</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item">
+                        <div class="spec-icon">📅</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Rok produkcji</span>
+                            <span class="spec-value">@Model.Year</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item">
+                        <div class="spec-icon">📏</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Przebieg</span>
+                            <span class="spec-value">@Model.Mileage.ToString("N0") km</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item">
+                        <div class="spec-icon">⚙️</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Silnik</span>
+                            <span class="spec-value">@Model.Engine</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item">
+                        <div class="spec-icon">🎨</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Kolor nadwozia</span>
+                            <span class="spec-value">@Model.Color</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item highlight">
+                        <div class="spec-icon">💰</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Cena</span>
+                            <span class="spec-value price-highlight">@Model.Price.ToString("N0") PLN</span>
+                        </div>
+                    </div>
+
+                    <div class="spec-item">
+                        <div class="spec-icon">✅</div>
+                        <div class="spec-content">
+                            <span class="spec-label">Status</span>
+                            <span class="spec-value status-active">Aktywne</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="details-sidebar">
-            <div class="price-card">
-                <h3>Cena</h3>
-                <div class="price-amount">@Model.Price.ToString("N2") PLN</div>
+        <div class="info-section">
+            <div class="title-header">
+                <h1 class="car-title">@Model.Brand @Model.Model</h1>
+                <p class="car-year">Rok: @Model.Year</p>
             </div>
 
-            <div class="seller-card">
-                <h3>Sprzedający</h3>
+            <div class="price-box-main">
+                <span class="price-label">Cena</span>
+                <span class="price-value">@Model.Price.ToString("N0") PLN</span>
+            </div>
+
+            <div class="seller-box">
+                <h3>👤 Sprzedający</h3>
                 <div class="seller-info">
                     <div class="seller-avatar">
-                        <span>👤</span>
+                        <span>@Model.User.Username.Substring(0, 1).ToUpper()</span>
                     </div>
                     <div class="seller-details">
                         <p class="seller-name">@Model.User.Username</p>
-                        <p class="seller-date">Członek od: @Model.User.CreatedAt.ToString("dd.MM.yyyy")</p>
+                        <p class="seller-date">Członek od: @Model.User.CreatedAt.ToString("MMMM yyyy")</p>
                     </div>
                 </div>
-                <button class="btn-contact">📧 Skontaktuj się</button>
+                <button class="btn-contact">
+                    <span>📧</span> Wyślij wiadomość
+                </button>
+                <button class="btn-phone">
+                    <span>📞</span> Pokaż numer telefonu
+                </button>
             </div>
 
-            <div class="meta-card">
-                <h3>Informacje o ogłoszeniu</h3>
-                <div class="meta-item">
-                    <span class="meta-label">Data dodania:</span>
-                    <span class="meta-value">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+            <div class="meta-info">
+                <h3>ℹ️ Informacje o ogłoszeniu</h3>
+                <div class="meta-row">
+                    <span class="meta-icon">🕐</span>
+                    <span class="meta-text">Dodano: @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                 </div>
                 @if (Model.ApprovedAt.HasValue)
                 {
-                    <div class="meta-item">
-                        <span class="meta-label">Zatwierdzone:</span>
-                        <span class="meta-value">@Model.ApprovedAt.Value.ToString("dd.MM.yyyy HH:mm")</span>
+                    <div class="meta-row">
+                        <span class="meta-icon">✅</span>
+                        <span class="meta-text">Zweryfikowano: @Model.ApprovedAt.Value.ToString("dd.MM.yyyy")</span>
                     </div>
                 }
-                <div class="meta-item">
-                    <span class="meta-label">ID ogłoszenia:</span>
-                    <span class="meta-value">#@Model.Id</span>
+                <div class="meta-row">
+                    <span class="meta-icon">🔢</span>
+                    <span class="meta-text">ID: #@Model.Id</span>
                 </div>
+                @if (Model.Images != null && Model.Images.Any())
+                {
+                    <div class="meta-row">
+                        <span class="meta-icon">📷</span>
+                        <span class="meta-text">Zdjęć: @Model.Images.Count</span>
+                    </div>
+                }
             </div>
         </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(Model.Description))
+    {
+        <div class="description-full">
+            <h2>📝 Opis pojazdu</h2>
+            <div class="description-content">
+                <p>@Model.Description</p>
+            </div>
+        </div>
+    }
 </div>
+
+@section Scripts {
+    <script>
+        function changeMainImage(imagePath, thumbnailElement) {
+            const mainImg = document.getElementById('mainImage');
+            mainImg.style.opacity = '0';
+            
+            setTimeout(() => {
+                mainImg.src = imagePath;
+                mainImg.style.opacity = '1';
+            }, 150);
+            
+            document.querySelectorAll('.thumbnail-item').forEach(t => t.classList.remove('active'));
+            thumbnailElement.classList.add('active');
+        }
+
+        function scrollThumbnails(direction) {
+            const container = document.getElementById('thumbnailsContainer');
+            const scrollAmount = 150;
+            
+            if (direction === 'left') {
+                container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            } else {
+                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        }
+
+        document.querySelector('.btn-contact')?.addEventListener('click', function() {
+            alert('📧 Funkcja wysyłania wiadomości będzie dostępna wkrótce!');
+        });
+
+        document.querySelector('.btn-phone')?.addEventListener('click', function() {
+            alert('📞 Numer telefonu: +48 XXX XXX XXX\n(Funkcja będzie dostępna wkrótce)');
+        });
+
+        document.addEventListener('keydown', function(e) {
+            const thumbnails = Array.from(document.querySelectorAll('.thumbnail-item'));
+            if (thumbnails.length === 0) return;
+
+            const currentIndex = thumbnails.findIndex(t => t.classList.contains('active'));
+            
+            if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                thumbnails[currentIndex - 1].click();
+            } else if (e.key === 'ArrowRight' && currentIndex < thumbnails.length - 1) {
+                thumbnails[currentIndex + 1].click();
+            }
+        });
+
+        const mainImage = document.getElementById('mainImage');
+        if (mainImage) {
+            mainImage.addEventListener('click', function() {
+                this.classList.toggle('zoomed');
+            });
+        }
+    </script>
+}

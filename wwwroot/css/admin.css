@@ -805,3 +805,175 @@ min-height: 100vh;
         width: 100%;
     }
 }
+
+
+/* ========== TABELA OGŁOSZEŃ ========== */
+.ads-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 20px;
+}
+
+.ads-table thead {
+    background: linear-gradient(135deg, #eb5757 0%, #c24848 100%);
+    color: white;
+}
+
+.ads-table th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ads-table tbody tr {
+    border-bottom: 1px solid #ecf0f1;
+    transition: all 0.3s;
+}
+
+.ads-table tbody tr:hover {
+    background: #fff5f5;
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(235, 87, 87, 0.1);
+}
+
+.ads-table td {
+    padding: 15px 12px;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.ads-table td strong {
+    color: #eb5757;
+    font-weight: 700;
+}
+
+.price-cell {
+    font-weight: 700;
+    color: #eb5757;
+    font-size: 15px;
+}
+
+.action-buttons-inline {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.btn-details,
+.btn-approve,
+.btn-reject {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.btn-details {
+    background: linear-gradient(135deg, #eb5757 0%, #c24848 100%);
+    color: white;
+}
+
+.btn-details:hover {
+    background: linear-gradient(135deg, #d94545 0%, #a83c3c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(235, 87, 87, 0.4);
+}
+
+.btn-approve {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-approve:hover {
+    background: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.btn-reject {
+    background: #95a5a6;
+    color: white;
+}
+
+.btn-reject:hover {
+    background: #7f8c8d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+}
+
+/* Responsywność tabeli */
+@media (max-width: 1400px) {
+    .ads-table {
+        font-size: 13px;
+    }
+
+    .ads-table th,
+    .ads-table td {
+        padding: 12px 10px;
+    }
+
+    .action-buttons-inline {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .btn-details,
+    .btn-approve,
+    .btn-reject {
+        width: 100%;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .ads-table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .ads-table thead,
+    .ads-table tbody,
+    .ads-table tr,
+    .ads-table th,
+    .ads-table td {
+        display: block;
+    }
+
+    .ads-table thead {
+        display: none;
+    }
+
+    .ads-table tbody tr {
+        margin-bottom: 15px;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+    .ads-table td {
+        padding: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ads-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #7f8c8d;
+        text-transform: uppercase;
+        font-size: 12px;
+    }
+
+    .action-buttons-inline {
+        width: 100%;
+        flex-direction: row;
+    }
+}

@@ -18,11 +18,6 @@ namespace autoflow.Controllers
             _jwtService = jwtService;
         }
 
-        /****************************************************
-         * GET: /Account/Login
-         * Wyświetla stronę logowania
-         * Jeśli użytkownik jest zalogowany -> przekierowanie na stronę główną
-         ****************************************************/
         [HttpGet]
         public IActionResult Login()
         {
@@ -33,12 +28,6 @@ namespace autoflow.Controllers
             return View();
         }
 
-        /****************************************************
-         * POST: /Account/Login
-         * Loguje użytkownika do systemu
-         * Weryfikuje dane logowania i generuje token JWT
-         * Token zapisywany jest w HttpOnly cookie (bezpieczne)
-         ****************************************************/
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
@@ -75,11 +64,6 @@ namespace autoflow.Controllers
             }
         }
 
-        /****************************************************
-         * GET: /Account/Register
-         * Wyświetla stronę rejestracji
-         * Jeśli użytkownik jest zalogowany -> przekierowanie na stronę główną
-         ****************************************************/
         [HttpGet]
         public IActionResult Register()
         {
@@ -90,12 +74,7 @@ namespace autoflow.Controllers
             return View();
         }
 
-        /****************************************************
-         * POST: /Account/Register
-         * Rejestruje nowego użytkownika w systemie
-         * Hashuje hasło (BCrypt), tworzy użytkownika z rolą "User"
-         * Automatycznie loguje użytkownika po rejestracji
-         ****************************************************/
+
         [HttpPost]
         public async Task<IActionResult> Register([FromBody] RegisterDto model)
         {
@@ -143,11 +122,6 @@ namespace autoflow.Controllers
             }
         }
 
-        /****************************************************
-         * POST: /Account/Logout
-         * Wylogowuje użytkownika z systemu
-         * Usuwa token JWT z ciasteczek
-         ****************************************************/
         [HttpPost]
         public IActionResult Logout()
         {
@@ -155,12 +129,6 @@ namespace autoflow.Controllers
             return Ok(new { success = true, message = "Wylogowano pomyślnie" });
         }
 
-        /****************************************************
-         * GET: /Account/CurrentUser
-         * Pobiera dane aktualnie zalogowanego użytkownika
-         * Waliduje token JWT i zwraca username + role z bazy danych
-         * Służy do sprawdzania czy użytkownik jest zalogowany
-         ****************************************************/
         [HttpGet]
         public async Task<IActionResult> CurrentUser()
         {
