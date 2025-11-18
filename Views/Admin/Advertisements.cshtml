@@ -170,8 +170,9 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showSuccess(data.message);
-                    await loadPendingAdvertisements();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 } else {
                     showError(data.message);
                 }
@@ -192,8 +193,9 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    showSuccess(data.message);
-                    await loadPendingAdvertisements();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
                 } else {
                     showError(data.message);
                 }

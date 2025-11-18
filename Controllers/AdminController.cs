@@ -1,9 +1,9 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using AutoFlow.Data;
 using AutoFlow.Models;
 using AutoFlow.Models.DTOs;
 using AutoFlow.Services;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AutoFlow.Controllers
 {
@@ -18,10 +18,6 @@ namespace AutoFlow.Controllers
             _jwtService = jwtService;
         }
 
-        /****************************************************
-         * GET: /Admin/Dashboard
-         * Główny panel administracyjny
-         ****************************************************/
         [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
@@ -31,10 +27,6 @@ namespace AutoFlow.Controllers
             return View();
         }
 
-        /****************************************************
-         * GET: /Admin/Users
-         * Zarządzanie użytkownikami
-         ****************************************************/
         [HttpGet]
         public async Task<IActionResult> Users()
         {
@@ -44,10 +36,6 @@ namespace AutoFlow.Controllers
             return View();
         }
 
-        /****************************************************
-         * GET: /Admin/GetUsers
-         * API - Pobiera listę użytkowników
-         ****************************************************/
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
@@ -62,30 +50,24 @@ namespace AutoFlow.Controllers
                     u.Role,
                     u.CreatedAt
                 })
-                .OrderByDescending(u => u.CreatedAt)
+                .OrderBy(u => u.Username)
                 .ToListAsync();
 
             return Ok(new { success = true, users });
         }
 
-        /****************************************************
-         * PUT: /Admin/UpdateUserRole
-         * API - Aktualizuje rolę użytkownika
-         ****************************************************/
         [HttpPut]
         public async Task<IActionResult> UpdateUserRole([FromBody] UpdateUserRoleDto model)
         {
             if (!await IsAdmin())
                 return Unauthorized(new { success = false, message = "Brak uprawnień" });
 
+            if (!ModelState.IsValid)
+                return BadRequest(new { success = false, message = "Nieprawidłowe dane" });
+
             var user = await _context.Users.FindAsync(model.UserId);
-            
             if (user == null)
                 return NotFound(new { success = false, message = "Użytkownik nie istnieje" });
-
-            var currentUserId = await GetCurrentUserId();
-            if (user.Id == currentUserId)
-                return BadRequest(new { success = false, message = "Nie możesz zmienić własnej roli" });
 
             user.Role = model.NewRole;
             await _context.SaveChangesAsync();
@@ -93,10 +75,6 @@ namespace AutoFlow.Controllers
             return Ok(new { success = true, message = "Rola użytkownika została zaktualizowana" });
         }
 
-        /****************************************************
-         * DELETE: /Admin/DeleteUser/{id}
-         * API - Usuwa użytkownika
-         ****************************************************/
         [HttpDelete]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -104,12 +82,11 @@ namespace AutoFlow.Controllers
                 return Unauthorized(new { success = false, message = "Brak uprawnień" });
 
             var user = await _context.Users.FindAsync(id);
-            
             if (user == null)
                 return NotFound(new { success = false, message = "Użytkownik nie istnieje" });
 
             var currentUserId = await GetCurrentUserId();
-            if (user.Id == currentUserId)
+            if (currentUserId == id)
                 return BadRequest(new { success = false, message = "Nie możesz usunąć własnego konta" });
 
             _context.Users.Remove(user);
@@ -140,10 +117,7 @@ namespace AutoFlow.Controllers
 
             return _jwtService.ValidateToken(token);
         }
-            /****************************************************
-         * GET: /Admin/Advertisements
-         * Zarządzanie ogłoszeniami
-         ****************************************************/
+
         [HttpGet]
         public async Task<IActionResult> Advertisements()
         {
@@ -153,10 +127,6 @@ namespace AutoFlow.Controllers
             return View();
         }
 
-        /****************************************************
-         * GET: /Admin/GetPendingAdvertisements
-         * API - Pobiera ogłoszenia oczekujące na weryfikację
-         ****************************************************/
         [HttpGet]
         public async Task<IActionResult> GetPendingAdvertisements()
         {
@@ -186,10 +156,6 @@ namespace AutoFlow.Controllers
             return Ok(new { success = true, advertisements });
         }
 
-        /****************************************************
-         * PUT: /Admin/ApproveAdvertisement/{id}
-         * API - Zatwierdza ogłoszenie
-         ****************************************************/
         [HttpPut]
         public async Task<IActionResult> ApproveAdvertisement(int id)
         {
@@ -197,7 +163,7 @@ namespace AutoFlow.Controllers
                 return Unauthorized(new { success = false, message = "Brak uprawnień" });
 
             var advertisement = await _context.Advertisements.FindAsync(id);
-            
+
             if (advertisement == null)
                 return NotFound(new { success = false, message = "Ogłoszenie nie istnieje" });
 
@@ -208,10 +174,6 @@ namespace AutoFlow.Controllers
             return Ok(new { success = true, message = "Ogłoszenie zostało zatwierdzone" });
         }
 
-        /****************************************************
-         * PUT: /Admin/RejectAdvertisement/{id}
-         * API - Odrzuca ogłoszenie
-         ****************************************************/
         [HttpPut]
         public async Task<IActionResult> RejectAdvertisement(int id)
         {
@@ -219,7 +181,7 @@ namespace AutoFlow.Controllers
                 return Unauthorized(new { success = false, message = "Brak uprawnień" });
 
             var advertisement = await _context.Advertisements.FindAsync(id);
-            
+
             if (advertisement == null)
                 return NotFound(new { success = false, message = "Ogłoszenie nie istnieje" });
 
@@ -227,6 +189,38 @@ namespace AutoFlow.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, message = "Ogłoszenie zostało odrzucone" });
+        }
+
+        [HttpDelete]
+        public async Task<IActionResult> DeleteAdvertisement(int id)
+        {
+            if (!await IsAdmin())
+                return Unauthorized(new { success = false, message = "Brak uprawnień" });
+
+            try
+            {
+                var advertisement = await _context.Advertisements
+                    .Include(a => a.Images)
+                    .FirstOrDefaultAsync(a => a.Id == id);
+
+                if (advertisement == null)
+                    return NotFound(new { success = false, message = "Ogłoszenie nie istnieje" });
+
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "advertisements", advertisement.Id.ToString());
+                if (Directory.Exists(uploadsFolder))
+                {
+                    Directory.Delete(uploadsFolder, true);
+                }
+
+                _context.Advertisements.Remove(advertisement);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Ogłoszenie zostało usunięte" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = $"Błąd serwera: {ex.Message}" });
+            }
         }
     }
 }

@@ -1,0 +1,153 @@
+﻿@model AutoFlow.Models.Advertisement
+@{
+    ViewData["Title"] = "Edytuj ogłoszenie";
+}
+
+<link rel="stylesheet" href="~/css/advertisement.css" asp-append-version="true" />
+
+<div class="advertisement-container">
+    <div class="container-wrapper">
+        <div class="form-section">
+            <div class="form-header">
+                <h1>✏️ Edytuj ogłoszenie</h1>
+                <p>Zaktualizuj informacje o pojeździe</p>
+            </div>
+
+            <form id="editForm">
+                <input type="hidden" id="advertisementId" value="@Model.Id" />
+
+                <div class="form-group">
+                    <label for="brand">Marka *</label>
+                    <input type="text" id="brand" name="brand" required value="@Model.Brand" />
+                </div>
+
+                <div class="form-group">
+                    <label for="model">Model *</label>
+                    <input type="text" id="model" name="model" required value="@Model.Model" />
+                </div>
+
+                <div class="form-group">
+                    <label for="year">Rocznik *</label>
+                    <input type="number" id="year" name="year" required min="1900" max="2100" value="@Model.Year" />
+                </div>
+
+                <div class="form-group">
+                    <label for="color">Kolor *</label>
+                    <input type="text" id="color" name="color" required value="@Model.Color" />
+                </div>
+
+                <div class="form-group">
+                    <label for="mileage">Przebieg (km) *</label>
+                    <input type="number" id="mileage" name="mileage" required min="0" value="@Model.Mileage" />
+                </div>
+
+                <div class="form-group">
+                    <label for="engine">Silnik *</label>
+                    <input type="text" id="engine" name="engine" required value="@Model.Engine" />
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Cena (PLN) *</label>
+                    <input type="number" id="price" name="price" required min="0.01" step="0.01" value="@Model.Price" />
+                </div>
+
+                <div class="form-group full-width">
+                    <label for="description">Opis</label>
+                    <textarea id="description" name="description" rows="4">@Model.Description</textarea>
+                </div>
+
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                <div id="successMessage" class="success-message" style="display: none;"></div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="window.history.back()">Anuluj</button>
+                    <button type="submit" class="btn-submit">💾 Zapisz zmiany</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="preview-section">
+            <div class="preview-header">
+                <h2>📷 Obecne zdjęcia</h2>
+                <p>Edycja zdjęć będzie dostępna wkrótce</p>
+            </div>
+
+            <div class="preview-content">
+                @if (Model.Images != null && Model.Images.Any())
+                {
+                    <div class="preview-images-grid">
+                        @foreach (var image in Model.Images.OrderBy(i => i.DisplayOrder))
+                        {
+                            <div class="preview-image-item @(image.IsMainImage ? "main" : "")">
+                                <img src="@image.ImagePath" alt="Zdjęcie" />
+                                @if (image.IsMainImage)
+                                {
+                                    <span class="main-badge">⭐ Główne</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p>Brak zdjęć</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const advertisementId = document.getElementById('advertisementId').value;
+            const formData = new FormData();
+            
+            formData.append('Brand', document.getElementById('brand').value);
+            formData.append('Model', document.getElementById('model').value);
+            formData.append('Year', document.getElementById('year').value);
+            formData.append('Color', document.getElementById('color').value);
+            formData.append('Mileage', document.getElementById('mileage').value);
+            formData.append('Engine', document.getElementById('engine').value);
+            formData.append('Price', document.getElementById('price').value);
+            formData.append('Description', document.getElementById('description').value);
+
+            try {
+                const response = await fetch(`/Advertisement/Update/${advertisementId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess(data.message);
+                    setTimeout(() => {
+                        window.location.href = '/Profile/Index';
+                    }, 2000);
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Wystąpił błąd podczas aktualizacji ogłoszenia');
+                console.error(error);
+            }
+        });
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSuccess(message) {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+}

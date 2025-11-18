@@ -24,23 +24,22 @@
                             <option value="Toyota">Toyota</option>
                             <option value="Ford">Ford</option>
                             <option value="Opel">Opel</option>
-                            <option value="Skoda">Škoda</option>
                         </select>
                     </div>
 
                     <div class="filter-group">
                         <label for="filterModel">Model</label>
-                        <input type="text" id="filterModel" class="filter-input" placeholder="np. Seria 3, A4">
+                        <input type="text" id="filterModel" class="filter-input" placeholder="np. 320i">
                     </div>
 
                     <div class="filter-group">
                         <label for="filterYearFrom">Rok od</label>
-                        <input type="number" id="filterYearFrom" class="filter-input" placeholder="2015" min="1900" max="2025">
+                        <input type="number" id="filterYearFrom" class="filter-input" placeholder="2015" min="1900" max="2100">
                     </div>
 
                     <div class="filter-group">
                         <label for="filterYearTo">Rok do</label>
-                        <input type="number" id="filterYearTo" class="filter-input" placeholder="2023" min="1900" max="2025">
+                        <input type="number" id="filterYearTo" class="filter-input" placeholder="2023" min="1900" max="2100">
                     </div>
 
                     <div class="filter-group">
@@ -105,13 +104,46 @@
     </section>
 </div>
 
+<div id="deleteModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Potwierdź usunięcie</h3>
+            <button class="close-modal" onclick="closeDeleteModalHome()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Czy na pewno chcesz usunąć ogłoszenie <strong id="deleteAdTitleHome"></strong>?</p>
+            <p style="color: #e74c3c; margin-top: 10px;">Ta operacja jest nieodwracalna!</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeDeleteModalHome()">Anuluj</button>
+            <button class="btn btn-delete" onclick="confirmDeleteHome()">Usuń</button>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         let allAdvertisements = [];
+        let currentUserRole = null;
+        let currentDeleteAdIdHome = null;
 
         document.addEventListener('DOMContentLoaded', async function() {
+            await checkUserRole();
             await loadAdvertisements();
         });
+
+        async function checkUserRole() {
+            try {
+                const response = await fetch('/Account/CurrentUser');
+                const data = await response.json();
+                
+                if (data.success && data.isAuthenticated) {
+                    currentUserRole = data.role;
+                }
+            } catch (error) {
+                console.error('Błąd pobierania roli użytkownika:', error);
+            }
+        }
 
         async function loadAdvertisements() {
             try {
@@ -161,8 +193,6 @@
         function createCard(ad) {
             const card = document.createElement('div');
             card.className = 'featured-card';
-            card.style.cursor = 'pointer';
-            card.onclick = () => window.location.href = `/Advertisement/Details/${ad.id}`;
 
             const price = ad.price.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
             const imageUrl = ad.mainImage || '/images/no-image.jpg';
@@ -170,6 +200,7 @@
             card.innerHTML = `
                 <div class="card-image" style="background-image: url('${imageUrl}')">
                     ${ad.imageCount > 1 ? `<div class="photo-badge">📷 ${ad.imageCount}</div>` : ''}
+                    ${currentUserRole === 'Admin' ? `<button class="btn-delete-card" onclick="event.stopPropagation(); openDeleteModalHome(${ad.id}, '${ad.brand} ${ad.model}')" title="Usuń ogłoszenie">🗑️</button>` : ''}
                 </div>
                 <div class="card-content">
                     <h3 class="card-title">${ad.brand} ${ad.model}</h3>
@@ -185,7 +216,43 @@
                 </div>
             `;
 
+            card.onclick = () => window.location.href = `/Advertisement/Details/${ad.id}`;
+
             return card;
+        }
+
+        function openDeleteModalHome(adId, adTitle) {
+            currentDeleteAdIdHome = adId;
+            document.getElementById('deleteAdTitleHome').textContent = adTitle;
+            document.getElementById('deleteModal').classList.add('show');
+        }
+
+        function closeDeleteModalHome() {
+            document.getElementById('deleteModal').classList.remove('show');
+            currentDeleteAdIdHome = null;
+        }
+
+        async function confirmDeleteHome() {
+            try {
+                const response = await fetch(`/Admin/DeleteAdvertisement/${currentDeleteAdIdHome}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                closeDeleteModalHome();
+        
+                if (data.success) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Błąd podczas usuwania ogłoszenia');
+                console.error(error);
+            }
         }
 
         function searchAdvertisements() {
@@ -207,9 +274,6 @@
 
             displayAdvertisements(filtered);
             updateResultsCount(filtered.length);
-
-            // Scroll do wyników
-            document.querySelector('.featured-section').scrollIntoView({ behavior: 'smooth' });
         }
 
         function resetFilters() {

@@ -551,3 +551,40 @@
     height: 250px;
   }
 }
+
+.preview-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.preview-image-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border: 3px solid transparent;
+    transition: all 0.3s;
+}
+
+.preview-image-item.main {
+    border-color: #eb5757;
+}
+
+.preview-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.main-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(235, 87, 87, 0.95);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+}

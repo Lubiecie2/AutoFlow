@@ -40,16 +40,12 @@
                         <span class="info-label">Data rejestracji:</span>
                         <span class="info-value">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                     </div>
-                    <div class="info-item">
-                        <span class="info-label">Status konta:</span>
-                        <span class="info-value status-active">✅ Aktywne</span>
-                    </div>
                 </div>
             </div>
 
             <div class="card activity-card">
                 <div class="card-header">
-                    <h2>📋 Ostatnia aktywność</h2>
+                    <h2>📊 Ostatnia aktywność</h2>
                 </div>
                 <div class="activity-list">
                     <div class="activity-item">
@@ -70,4 +66,102 @@
             </div>
         </div>
     </div>
+
+    <div class="my-ads-section">
+        <div class="section-header">
+            <h2>🚗 Moje ogłoszenia</h2>
+            <a href="/Advertisement/Create" class="btn-add-ad">+ Dodaj ogłoszenie</a>
+        </div>
+
+        <div id="myAdsContainer" class="ads-grid"></div>
+        <div id="noAds" class="no-ads" style="display: none;">
+            <p>📝 Nie masz jeszcze żadnych ogłoszeń</p>
+            <a href="/Advertisement/Create" class="btn-create-first">Dodaj pierwsze ogłoszenie</a>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', loadMyAdvertisements);
+
+        async function loadMyAdvertisements() {
+            try {
+                const response = await fetch('/Advertisement/MyAdvertisements');
+                const data = await response.json();
+
+                if (data.success && data.advertisements.length > 0) {
+                    displayAdvertisements(data.advertisements);
+                } else {
+                    document.getElementById('noAds').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Błąd:', error);
+            }
+        }
+
+        function displayAdvertisements(advertisements) {
+            const container = document.getElementById('myAdsContainer');
+            container.innerHTML = '';
+
+            advertisements.forEach(ad => {
+                const statusClass = ad.status === 'Approved' ? 'approved' : ad.status === 'Pending' ? 'pending' : 'rejected';
+                const statusText = ad.status === 'Approved' ? '✅ Zatwierdzone' : ad.status === 'Pending' ? '⏳ Oczekuje' : '❌ Odrzucone';
+
+                const card = document.createElement('div');
+                card.className = 'ad-card';
+                card.innerHTML = `
+                    <div class="ad-image">
+                        <img src="${ad.mainImage || '/images/no-image.png'}" alt="${ad.brand} ${ad.model}" onerror="this.src='/images/no-image.png'" />
+                        <span class="ad-status ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="ad-content">
+                        <h3>${ad.brand} ${ad.model}</h3>
+                        <p class="ad-details">
+                            📅 ${ad.year} | 📏 ${ad.mileage.toLocaleString()} km | ⚙️ ${ad.engine}
+                        </p>
+                        <p class="ad-price">${ad.price.toLocaleString('pl-PL', {minimumFractionDigits: 0})} PLN</p>
+                        <p class="ad-date">Dodano: ${new Date(ad.createdAt).toLocaleDateString('pl-PL')}</p>
+                        <div class="ad-actions">
+                            <button class="btn-view" onclick="window.location.href='/Advertisement/Details/${ad.id}'">
+                                👁️ Zobacz
+                            </button>
+                            <button class="btn-edit" onclick="window.location.href='/Advertisement/Edit/${ad.id}'">
+                                ✏️ Edytuj
+                            </button>
+                            <button class="btn-delete" onclick="deleteAdvertisement(${ad.id})">
+                                🗑️ Usuń
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function deleteAdvertisement(id) {
+            if (!confirm('Czy na pewno chcesz usunąć to ogłoszenie? Ta operacja jest nieodwracalna.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/Advertisement/Delete/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Wystąpił błąd podczas usuwania ogłoszenia');
+                console.error(error);
+            }
+        }
+    </script>
+}
