@@ -468,5 +468,16 @@ namespace AutoFlow.Controllers
 
             return _jwtService.ValidateToken(token);
         }
+
+        /****************************************************
+         * GET: /Advertisement/Browse
+         * Strona przeglądania wszystkich ogłoszeń z filtrami
+         ****************************************************/
+            [HttpGet]
+            public IActionResult Browse()
+            {
+                return View();
+        }
+
     }
 }

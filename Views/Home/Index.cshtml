@@ -24,6 +24,17 @@
                             <option value="Toyota">Toyota</option>
                             <option value="Ford">Ford</option>
                             <option value="Opel">Opel</option>
+                            <option value="Skoda">Skoda</option>
+                            <option value="Seat">Seat</option>
+                            <option value="Renault">Renault</option>
+                            <option value="Peugeot">Peugeot</option>
+                            <option value="Citroen">Citroen</option>
+                            <option value="Fiat">Fiat</option>
+                            <option value="Mazda">Mazda</option>
+                            <option value="Honda">Honda</option>
+                            <option value="Nissan">Nissan</option>
+                            <option value="Hyundai">Hyundai</option>
+                            <option value="Kia">Kia</option>
                         </select>
                     </div>
 
@@ -54,7 +65,7 @@
                 </div>
 
                 <div class="filter-buttons">
-                    <button class="btn-search" onclick="searchAdvertisements()">Szukaj</button>
+                    <button class="btn-search" onclick="redirectToSearch()">Szukaj</button>
                     <button class="btn-reset" onclick="resetFilters()">Wyczyść filtry</button>
                 </div>
             </aside>
@@ -255,25 +266,24 @@
             }
         }
 
-        function searchAdvertisements() {
-            const brand = document.getElementById('filterBrand').value.toLowerCase();
-            const model = document.getElementById('filterModel').value.toLowerCase();
-            const yearFrom = parseInt(document.getElementById('filterYearFrom').value) || 0;
-            const yearTo = parseInt(document.getElementById('filterYearTo').value) || 9999;
-            const priceFrom = parseFloat(document.getElementById('filterPriceFrom').value) || 0;
-            const priceTo = parseFloat(document.getElementById('filterPriceTo').value) || Infinity;
+        function redirectToSearch() {
+            const brand = document.getElementById('filterBrand').value;
+            const model = document.getElementById('filterModel').value;
+            const yearFrom = document.getElementById('filterYearFrom').value;
+            const yearTo = document.getElementById('filterYearTo').value;
+            const priceFrom = document.getElementById('filterPriceFrom').value;
+            const priceTo = document.getElementById('filterPriceTo').value;
 
-            const filtered = allAdvertisements.filter(ad => {
-                const matchBrand = !brand || ad.brand.toLowerCase().includes(brand);
-                const matchModel = !model || ad.model.toLowerCase().includes(model);
-                const matchYear = ad.year >= yearFrom && ad.year <= yearTo;
-                const matchPrice = ad.price >= priceFrom && ad.price <= priceTo;
+            const params = new URLSearchParams();
+            
+            if (brand) params.append('brand', brand);
+            if (model) params.append('model', model);
+            if (yearFrom) params.append('yearFrom', yearFrom);
+            if (yearTo) params.append('yearTo', yearTo);
+            if (priceFrom) params.append('priceFrom', priceFrom);
+            if (priceTo) params.append('priceTo', priceTo);
 
-                return matchBrand && matchModel && matchYear && matchPrice;
-            });
-
-            displayAdvertisements(filtered);
-            updateResultsCount(filtered.length);
+            window.location.href = `/Advertisement/Browse?${params.toString()}`;
         }
 
         function resetFilters() {
@@ -283,9 +293,6 @@
             document.getElementById('filterYearTo').value = '';
             document.getElementById('filterPriceFrom').value = '';
             document.getElementById('filterPriceTo').value = '';
-
-            displayAdvertisements(allAdvertisements);
-            updateResultsCount(allAdvertisements.length);
         }
 
         function updateResultsCount(count) {

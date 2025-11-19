@@ -1,0 +1,264 @@
+﻿@{
+    ViewData["Title"] = "Przeglądaj ogłoszenia";
+}
+
+<link rel="stylesheet" href="~/css/browse.css" asp-append-version="true" />
+
+<div class="browse-container">
+    <div class="browse-header">
+        <h1>🚗 Wszystkie ogłoszenia</h1>
+        <p id="resultsCount">Ładowanie ogłoszeń...</p>
+    </div>
+
+    <div class="browse-wrapper">
+        <aside class="filters-sidebar">
+            <h2>🔍 Filtry wyszukiwania</h2>
+            <div class="filter-section">
+                <label for="filterBrand">Marka</label>
+                <select id="filterBrand" class="filter-input">
+                    <option value="">Wszystkie marki</option>
+                    <option value="BMW">BMW</option>
+                    <option value="Audi">Audi</option>
+                    <option value="Mercedes">Mercedes-Benz</option>
+                    <option value="Volkswagen">Volkswagen</option>
+                    <option value="Toyota">Toyota</option>
+                    <option value="Ford">Ford</option>
+                    <option value="Opel">Opel</option>
+                    <option value="Skoda">Skoda</option>
+                    <option value="Seat">Seat</option>
+                    <option value="Renault">Renault</option>
+                    <option value="Peugeot">Peugeot</option>
+                    <option value="Citroen">Citroen</option>
+                    <option value="Fiat">Fiat</option>
+                    <option value="Mazda">Mazda</option>
+                    <option value="Honda">Honda</option>
+                    <option value="Nissan">Nissan</option>
+                    <option value="Hyundai">Hyundai</option>
+                    <option value="Kia">Kia</option>
+                </select>
+            </div>
+
+            <div class="filter-section">
+                <label for="filterModel">Model</label>
+                <input type="text" id="filterModel" class="filter-input" placeholder="np. 320i">
+            </div>
+
+            <div class="filter-section">
+                <label for="filterYearFrom">Rok produkcji od</label>
+                <input type="number" id="filterYearFrom" class="filter-input" placeholder="2015" min="1900" max="2100">
+            </div>
+
+            <div class="filter-section">
+                <label for="filterYearTo">Rok produkcji do</label>
+                <input type="number" id="filterYearTo" class="filter-input" placeholder="2023" min="1900" max="2100">
+            </div>
+
+            <div class="filter-section">
+                <label for="filterPriceFrom">Cena od (PLN)</label>
+                <input type="number" id="filterPriceFrom" class="filter-input" placeholder="10 000" min="0">
+            </div>
+
+            <div class="filter-section">
+                <label for="filterPriceTo">Cena do (PLN)</label>
+                <input type="number" id="filterPriceTo" class="filter-input" placeholder="50 000" min="0">
+            </div>
+
+            <div class="filter-buttons">
+                <button class="btn-apply-filters" onclick="applyFilters()">Zastosuj filtry</button>
+                <button class="btn-reset-filters" onclick="resetFilters()">Wyczyść filtry</button>
+            </div>
+        </aside>
+
+        <main class="browse-content">
+            <div id="loadingSpinner" class="loading">
+                <div class="spinner"></div>
+                <p>Ładowanie ogłoszeń...</p>
+            </div>
+
+            <div id="advertisementsGrid" class="advertisements-grid"></div>
+
+            <div id="noResults" class="no-results" style="display: none;">
+                <p>🔍 Brak ogłoszeń spełniających kryteria</p>
+            </div>
+        </main>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allAdvertisements = [];
+        let currentUserRole = null;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkUserRole();
+            loadFiltersFromURL();
+            await loadAdvertisements();
+        });
+
+        async function checkUserRole() {
+            try {
+                const response = await fetch('/Account/CurrentUser');
+                const data = await response.json();
+                
+                if (data.success && data.isAuthenticated) {
+                    currentUserRole = data.role;
+                }
+            } catch (error) {
+                console.error('Błąd pobierania roli użytkownika:', error);
+            }
+        }
+
+        function loadFiltersFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            const brand = urlParams.get('brand');
+            const model = urlParams.get('model');
+            const yearFrom = urlParams.get('yearFrom');
+            const yearTo = urlParams.get('yearTo');
+            const priceFrom = urlParams.get('priceFrom');
+            const priceTo = urlParams.get('priceTo');
+
+            if (brand) document.getElementById('filterBrand').value = brand;
+            if (model) document.getElementById('filterModel').value = model;
+            if (yearFrom) document.getElementById('filterYearFrom').value = yearFrom;
+            if (yearTo) document.getElementById('filterYearTo').value = yearTo;
+            if (priceFrom) document.getElementById('filterPriceFrom').value = priceFrom;
+            if (priceTo) document.getElementById('filterPriceTo').value = priceTo;
+        }
+
+        async function loadAdvertisements() {
+            try {
+                const response = await fetch('/Advertisement/GetAll');
+                const data = await response.json();
+                
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                loadingSpinner.style.display = 'none';
+                
+                if (data.success && data.advertisements.length > 0) {
+                    allAdvertisements = data.advertisements;
+                    applyFilters();
+                } else {
+                    document.getElementById('noResults').style.display = 'block';
+                    updateResultsCount(0);
+                }
+            } catch (error) {
+                console.error('Błąd ładowania ogłoszeń:', error);
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('noResults').style.display = 'block';
+            }
+        }
+
+        function applyFilters() {
+            const brand = document.getElementById('filterBrand').value.toLowerCase();
+            const model = document.getElementById('filterModel').value.toLowerCase();
+            const yearFrom = parseInt(document.getElementById('filterYearFrom').value) || 0;
+            const yearTo = parseInt(document.getElementById('filterYearTo').value) || 9999;
+            const priceFrom = parseFloat(document.getElementById('filterPriceFrom').value) || 0;
+            const priceTo = parseFloat(document.getElementById('filterPriceTo').value) || Infinity;
+
+            const filtered = allAdvertisements.filter(ad => {
+                const matchBrand = !brand || ad.brand.toLowerCase().includes(brand);
+                const matchModel = !model || ad.model.toLowerCase().includes(model);
+                const matchYear = ad.year >= yearFrom && ad.year <= yearTo;
+                const matchPrice = ad.price >= priceFrom && ad.price <= priceTo;
+
+                return matchBrand && matchModel && matchYear && matchPrice;
+            });
+
+            displayAdvertisements(filtered);
+            updateResultsCount(filtered.length);
+        }
+
+        function resetFilters() {
+            document.getElementById('filterBrand').value = '';
+            document.getElementById('filterModel').value = '';
+            document.getElementById('filterYearFrom').value = '';
+            document.getElementById('filterYearTo').value = '';
+            document.getElementById('filterPriceFrom').value = '';
+            document.getElementById('filterPriceTo').value = '';
+
+            window.history.pushState({}, '', '/Advertisement/Browse');
+            
+            displayAdvertisements(allAdvertisements);
+            updateResultsCount(allAdvertisements.length);
+        }
+
+        function displayAdvertisements(advertisements) {
+            const container = document.getElementById('advertisementsGrid');
+            const noResults = document.getElementById('noResults');
+            
+            container.innerHTML = '';
+            
+            if (advertisements.length === 0) {
+                container.style.display = 'none';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            container.style.display = 'grid';
+            noResults.style.display = 'none';
+
+            advertisements.forEach(ad => {
+                const card = createCard(ad);
+                container.appendChild(card);
+            });
+        }
+
+        function createCard(ad) {
+            const card = document.createElement('div');
+            card.className = 'ad-card';
+
+            const price = ad.price.toLocaleString('pl-PL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            const imageUrl = ad.mainImage || '/images/no-image.jpg';
+
+            card.innerHTML = `
+                <div class="card-image" style="background-image: url('${imageUrl}')">
+                    ${ad.imageCount > 1 ? `<div class="photo-badge">📷 ${ad.imageCount}</div>` : ''}
+                    ${currentUserRole === 'Admin' ? `<button class="btn-delete-card" onclick="event.stopPropagation(); deleteAdvertisement(${ad.id})" title="Usuń ogłoszenie">🗑️</button>` : ''}
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">${ad.brand} ${ad.model}</h3>
+                    <div class="card-specs">
+                        <span>📅 ${ad.year}</span>
+                        <span>📏 ${ad.mileage.toLocaleString('pl-PL')} km</span>
+                        <span>⚙️ ${ad.engine}</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="card-price">${price} PLN</span>
+                        <span class="card-author">👤 ${ad.username}</span>
+                    </div>
+                </div>
+            `;
+
+            card.onclick = () => window.location.href = `/Advertisement/Details/${ad.id}`;
+
+            return card;
+        }
+
+        async function deleteAdvertisement(id) {
+            if (!confirm('Czy na pewno chcesz usunąć to ogłoszenie?')) return;
+
+            try {
+                const response = await fetch(`/Admin/DeleteAdvertisement/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    await loadAdvertisements();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('Błąd podczas usuwania ogłoszenia');
+                console.error(error);
+            }
+        }
+
+        function updateResultsCount(count) {
+            const resultsCount = document.getElementById('resultsCount');
+            resultsCount.textContent = `Znaleziono ${count} ${count === 1 ? 'ogłoszenie' : count < 5 && count > 1 ? 'ogłoszenia' : 'ogłoszeń'}`;
+        }
+    </script>
+}
